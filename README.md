@@ -1,7 +1,5 @@
 # BriscolaProject
 
-# BriscolaProject
-
 C++ application for video-based detection and analysis of Briscola playing cards.
 
 ## Requirements
