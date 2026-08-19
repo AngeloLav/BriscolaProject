@@ -1,0 +1,62 @@
+###Info:
+Dataset created and annotated by Angelo Lavarini and published on Roboflow:
+https://universe.roboflow.com/angelo-lavarini/briscola-cards-qjglt
+
+YOLO11n fine-tuning performed in Google Colab using Ultralytics.
+
+
+###Code 
+Dataset preprocessing and augmentation:
+- Images resized to 640x640 in Roboflow.
+- Roboflow augmentations used during dataset generation included brightness variation and motion blur.
+- During fine-tuning, Ultralytics also applied its default training augmentations, including mosaic, translation, scaling, horizontal flipping and HSV variations.
+- No custom Ultralytics augmentation parameters were explicitly set in model.train().
+
+#Installing ultralytics
+!pip install -q -U ultralytics
+
+from ultralytics import YOLO
+import torch
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+DATA_YAML = "/content/drive/MyDrive/BriscolaDataset/data.yaml"
+
+model = YOLO("yolo11n.pt")
+
+results = model.train(
+    data=DATA_YAML,
+    epochs=40,
+    patience=15,
+    imgsz=640,
+    batch=16,
+    device=0,
+    project="/content/drive/MyDrive/BriscolaDataset/runs",
+    name="yolo11n_baseline"
+)
+
+#TESTING
+best_model = YOLO(
+    "/content/drive/MyDrive/BriscolaDataset/runs/yolo11n_baseline-3/weights/best.pt"
+)
+
+metrics = best_model.val(
+        data=DATA_YAML,
+        split="test",
+        imgsz=640,
+)
+
+#Exporting the model in onnx
+model = YOLO(
+    "/content/drive/MyDrive/BriscolaDataset/runs/"
+    "yolo11n_baseline-3/weights/best.pt"
+)
+
+model.export(
+    format="onnx",
+    imgsz=640,
+    batch=1,
+    nms=False,
+    simplify=True
+)
