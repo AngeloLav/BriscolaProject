@@ -4,7 +4,6 @@ C++ application for video-based detection and analysis of Briscola playing cards
 
 ## Requirements
 
-* C++17
 * CMake
 * OpenCV
 
