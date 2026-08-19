@@ -14,7 +14,7 @@ Additional dependencies required for model inference will be documented as they 
 Clone the repository and configure the project:
 
 ```bash
-git clone <REPOSITORY_URL>
+git clone https://github.com/AngeloLav/BriscolaProject.git
 
 cmake -S . -B build
 cmake --build build
