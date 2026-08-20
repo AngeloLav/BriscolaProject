@@ -1,3 +1,5 @@
+// Author: Angelo Lavarini
+
 #ifndef DETECTOR_HPP
 #define DETECTOR_HPP
 
@@ -16,15 +18,16 @@ struct Detection {
 class Detector {
     public:
 
+        // Responsible of loading the model
         Detector(const std::string& modelPath);
+        // Responsible for making detections (uses the model, makes predictions, filter preditions, uses NMS)
         std::vector<Detection> detect(const cv::Mat& frame);
-
-        // Functions
+        // Draws BB on each frame, used for development
         void drawDetections(
         cv::Mat& frame,
         const std::vector<Detection>& detections
         );
-        
+
     private:
 
         cv::dnn::Net net;

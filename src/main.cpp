@@ -43,8 +43,30 @@ int main(int argc, char** argv) {
 
         std::vector<Detection> detections = detector.detect(frame);
 
+        // NB. For the next that will work on this: each detection contains:
+        // - detection.box --> bb in the original frame coordinates
+        // - detection.confidence --> confidence score
+        // - detecion.classId --> detected class
+
+        // The BB will be used as a ROI (region of interest) to crop the detected 
+        // card from the original frame for further processing. I tried organizing code so that you don't have 
+        // to deal with what i have written, just starting from the detections.
+
+        // The idea i had was to:
+        // 1) Take the crops from the original frame by the BB
+        // 2) Using some pre-processing if useful, to deal with motion blur 
+        // 3) Finding a way to make the card view frontal
+        // 4) Choosing a feature matching technique to confront the keypoints obtained
+        //    by each crop with SIFT with the keypoints obtained by the labeled cards Trentine
+        //    that we keep into another folder (they are on google drive of the assignement)
+        // 5) Classifying the type of card based on the matching for each frame of the video
+
+        // Once this matching work, the last part for the last who will work here will be organizing
+        // and ordering the detections, and counting points as it is described in the assignment
+
+
         // Used for development, maybe it will be commented in the final project
-        //detector.drawDetections(frame, detections);
+        detector.drawDetections(frame, detections);
 
         // Showing each frame
         cv::imshow("Briscola video", frame);

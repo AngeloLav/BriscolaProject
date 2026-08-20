@@ -1,3 +1,5 @@
+// Author: Angelo Lavarini
+
 #include "detector.hpp"
 
 #include <iostream>
