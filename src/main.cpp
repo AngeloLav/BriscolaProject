@@ -15,8 +15,11 @@
 #include <opencv2/dnn/dnn.hpp>
 
 
+#include "JsonReader.h"
+
+
 int main(int argc, char** argv) {
-   
+ /*  
     if (argc < 2) {
         std::cout << "Use the program with: ./briscola <video.mp4>" << std::endl;
         return 1;
@@ -78,7 +81,38 @@ int main(int argc, char** argv) {
 
         frameIndex++;
     }
+*/
+
     
+    // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
+     try {
+
+        GamePrediction prediction =
+            JsonReader::readGamePrediction(
+                "json_games/briscola_game_test_clean_v2.json"
+            );
+
+        std::cout
+            << "Rounds loaded: "
+            << prediction.rounds.size()
+            << std::endl;
+
+        std::cout
+            << "Briscola candidates: "
+            << prediction.briscolaDetected.size()
+            << std::endl;
+
+    }
+    catch (const std::exception& e) {
+
+        std::cerr
+            << "Error: "
+            << e.what()
+            << std::endl;
+
+        return 1;
+    }
+
     return 0;
 }
 

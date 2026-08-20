@@ -37,7 +37,7 @@ struct PlayerDetected {
 };
 
 // prediction for a round (single video), vectors conteins the top candidates for each card and for the leader
-struct roundPrediction {
+struct RoundPrediction {
     int round;
 
     std::vector<CardDetected> northDetected;
@@ -49,7 +49,7 @@ struct roundPrediction {
 // prediction for the game produce by the CV procedure, contains predictions for all
 // 20 rounds and candidates for the briscola card
 struct GamePrediction {
-    std::vector<roundPrediction> rounds;
+    std::vector<RoundPrediction> rounds;
 
     std::vector<CardDetected> briscolaDetected;
 };
