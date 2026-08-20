@@ -16,7 +16,7 @@ enum class CardType {
 // players identified by their position
 enum class Player {
     NORTH,
-    SUD
+    SOUTH
 };
 
 struct Card {
