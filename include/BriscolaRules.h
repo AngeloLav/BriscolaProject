@@ -11,5 +11,12 @@ namespace BriscolaRules {
     // Returns the total number of points collected in a round
     int getRoundPoints(const Card& north, const Card& south);
 
+    // Determines the winner of a round according to the Briscola rules
+    Player findWinner(
+        const Card& north,
+        const Card& south,
+        const Card& briscola,
+        Player leader
+    );
 
 }

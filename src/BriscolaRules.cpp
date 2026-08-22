@@ -46,3 +46,44 @@ int BriscolaRules::getCardPoints(const Card& card) {
 int BriscolaRules::getRoundPoints(const Card& north, const Card& south) {
     return getCardPoints(north) + getCardPoints(south);
 }
+
+
+Player BriscolaRules::findWinner(const Card& north, const Card& south, const Card& briscola, Player leader) {
+    const Card& firstCard = (leader == Player::NORTH) ? north : south;
+
+    const Card& secondCard = (leader == Player::NORTH) ? south : north;
+
+    Player secondPlayer = (leader == Player::NORTH) ? Player::SOUTH : Player::NORTH;
+
+    bool firstIsBriscola = 0;
+    bool secondIsBriscola = 0;
+
+    if (firstIsBriscola = firstCard.type == briscola.type) {
+        firstIsBriscola = true;
+    }
+
+    if (secondIsBriscola = secondCard.type == briscola.type) {
+        secondIsBriscola = true;
+    }   
+
+    // If at least one briscola card is played.
+    if (firstIsBriscola || secondIsBriscola) {
+
+        // If both cards are briscola, the strongest one wins.
+        if (firstIsBriscola && secondIsBriscola) {
+            return getCardStrength(firstCard) > getCardStrength(secondCard) ? leader : secondPlayer;
+        }
+
+        // Otherwise, the only briscola card wins.
+        return firstIsBriscola ? leader : secondPlayer;
+    }
+
+    // If the second card has a different type, the first played card wins.
+    if (firstCard.type != secondCard.type) {
+        return leader;
+    }
+
+    // Same type: the strongest card wins.
+    return getCardStrength(firstCard) > getCardStrength(secondCard) ? leader : secondPlayer;
+
+}
