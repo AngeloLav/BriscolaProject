@@ -17,6 +17,8 @@
 
 #include "JsonReader.h"
 #include "GameEngine.h"
+#include "BriscolaRules.h"
+#include "Validator.h"
 
 
 int main(int argc, char** argv) {
@@ -116,6 +118,7 @@ int main(int argc, char** argv) {
     }
 
     Game game = GameEngine::createGame(prediction);
+    GameEngine::computeGame(game);
 
     std::cout << "Rounds: "
             << game.rounds.size()
@@ -132,6 +135,17 @@ int main(int argc, char** argv) {
     std::cout << "Total points: "
             << game.northScore + game.southScore
             << std::endl;
+
+    ValidationResult validation = Validator::validate(game);
+
+    std::cout << "Card issues: "
+            << validation.cardIssues.size()
+            << std::endl;
+
+    std::cout << "Leader issues: "
+            << validation.leaderIssues.size()
+            << std::endl;
+
     return 0;
 }
 
