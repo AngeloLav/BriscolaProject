@@ -85,12 +85,13 @@ int main(int argc, char** argv) {
 */
 
     
+    GamePrediction prediction;
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
-     try {
+    try {
 
-        GamePrediction prediction =
+        prediction =
             JsonReader::readGamePrediction(
-                "json_games/briscola_game_test_clean_v2.json"
+                "json_games/briscola_game_test_errors_v2.json"
             );
 
         std::cout
@@ -114,12 +115,6 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-
-    GamePrediction prediction =
-    JsonReader::readGamePrediction(
-        "briscola_game_test_clean_v2.json"
-    );
-
     Game game = GameEngine::createGame(prediction);
 
     std::cout << "Rounds: "
@@ -137,7 +132,6 @@ int main(int argc, char** argv) {
     std::cout << "Total points: "
             << game.northScore + game.southScore
             << std::endl;
-
     return 0;
 }
 
