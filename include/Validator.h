@@ -3,14 +3,37 @@
 #include "gameModels.h"
 
 
-enum class IssueType {
+enum class CardIssueType {
     // Indicates that a card was detected more than once
     DUPLICATE_CARD,
     // Indicates that a card is not used in the game
     MISSING_CARD,
-    BRISCOLA_NOT_FOUND,
-    // Indicates that the winner of a round is not detected as the leader
-    LEADER_CONFLICT,
-    // Indicates that the total points of the game is not 120
-    INVALID_TOTAL_POINTS
+};
+
+// Indicates where a detected card appears in the game.
+struct CardPosition {
+    int round;
+    Player player;
+};
+
+// Describes a problem related to a card.
+struct CardIssue {
+    CardIssueType type;
+    Card card;
+
+    // Empty for a missing card.
+    // Contains all occurrences for a duplicated card.
+    std::vector<CardPosition> positions;
+};
+
+// Indicates that the winner of a round is not detected as the leader of the following round
+struct LeaderIssue {
+    int previousRound;
+    int nextRound;
+};
+
+// Complete result of the validation.
+struct ValidationResult {
+    std::vector<CardIssue> cardIssues;
+    std::vector<LeaderIssue> leaderIssues;
 };
