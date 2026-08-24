@@ -17,6 +17,17 @@ struct CardPosition {
 };
 
 // Describes a problem related to a card.
+// Example: if 6 BASTONI is detected twice,
+// type = DUPLICATE_CARD
+//     card = 6 BASTONI
+//     positions:
+//         round 5, NORTH
+//         round 18, SOUTH
+
+// Example: if 3 COPPE is not detected,
+// type = MISSING_CARD
+//     card = 3 COPPE
+//     positions: empty
 struct CardIssue {
     CardIssueType type;
     Card card;
@@ -36,4 +47,11 @@ struct LeaderIssue {
 struct ValidationResult {
     std::vector<CardIssue> cardIssues;
     std::vector<LeaderIssue> leaderIssues;
+};
+
+
+class Validator {
+
+    public:
+        static ValidationResult validate(const Game& game);
 };

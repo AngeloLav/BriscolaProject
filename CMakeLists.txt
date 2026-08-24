@@ -17,6 +17,7 @@ add_executable(
     src/JsonReader.cpp
     src/GameEngine.cpp
     src/BriscolaRules.cpp
+    src/Validator.cpp
 )
 
 target_link_libraries(
