@@ -5,7 +5,6 @@
 
 
 Game GameEngine::createGame(const GamePrediction& prediction) {
-
     if (prediction.briscolaDetected.empty()) {
         throw std::runtime_error("No briscola candidate available");
     }
@@ -42,9 +41,43 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
         game.rounds.push_back(round);
     }
 
-    recomputeGame(game);
+    computeGame(game);
 
     return game;
 }
 
 
+void GameEngine::computeGame(Game& game) {
+    game.northScore = 0;
+    game.southScore = 0;
+
+    // Compute winners and points for each round, and accumulate total scores
+    for (auto& round : game.rounds) {
+        round.winner =
+            BriscolaRules::findWinner(
+                round.north,
+                round.south,
+                game.briscola,
+                round.leader
+            );
+        round.points =
+            BriscolaRules::getRoundPoints(
+                round.north,
+                round.south
+            );
+
+        if (round.winner == Player::NORTH) {
+            game.northScore += round.points;
+        }
+        else {
+            game.southScore += round.points;
+        }
+    }
+
+    if (game.northScore > game.southScore) {
+        game.winner = Player::NORTH;
+    }
+    else {
+        game.winner = Player::SOUTH;
+    }
+}
