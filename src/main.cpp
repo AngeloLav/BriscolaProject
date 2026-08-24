@@ -16,6 +16,7 @@
 
 
 #include "JsonReader.h"
+#include "GameEngine.h"
 
 
 int main(int argc, char** argv) {
@@ -112,6 +113,30 @@ int main(int argc, char** argv) {
 
         return 1;
     }
+
+
+    GamePrediction prediction =
+    JsonReader::readGamePrediction(
+        "briscola_game_test_clean_v2.json"
+    );
+
+    Game game = GameEngine::createGame(prediction);
+
+    std::cout << "Rounds: "
+            << game.rounds.size()
+            << std::endl;
+
+    std::cout << "North score: "
+            << game.northScore
+            << std::endl;
+
+    std::cout << "South score: "
+            << game.southScore
+            << std::endl;
+
+    std::cout << "Total points: "
+            << game.northScore + game.southScore
+            << std::endl;
 
     return 0;
 }

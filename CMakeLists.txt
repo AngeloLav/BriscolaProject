@@ -15,6 +15,8 @@ add_executable(
     src/main.cpp
     src/detector.cpp
     src/JsonReader.cpp
+    src/GameEngine.cpp
+    src/BriscolaRules.cpp
 )
 
 target_link_libraries(
