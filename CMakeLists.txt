@@ -18,6 +18,7 @@ add_executable(
     src/GameEngine.cpp
     src/BriscolaRules.cpp
     src/Validator.cpp
+    src/ErrorResolver.cpp
 )
 
 target_link_libraries(
