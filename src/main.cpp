@@ -18,7 +18,7 @@
 #include "JsonReader.h"
 #include "GameEngine.h"
 #include "BriscolaRules.h"
-#include "Validator.h"
+#include "ErrorResolver.h"
 
 
 int main(int argc, char** argv) {
@@ -86,64 +86,44 @@ int main(int argc, char** argv) {
     }
 */
 
-    
-    GamePrediction prediction;
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
-    try {
+    
+    GamePrediction prediction =
+        JsonReader::readGamePrediction(
+            "json_games/briscola_game_test_errors_v2.json"
+        );
 
-        prediction =
-            JsonReader::readGamePrediction(
-                "json_games/briscola_game_test_errors_v2.json"
-            );
+    Game game =
+        GameEngine::createGame(prediction);
 
-        std::cout
-            << "Rounds loaded: "
-            << prediction.rounds.size()
-            << std::endl;
-
-        std::cout
-            << "Briscola candidates: "
-            << prediction.briscolaDetected.size()
-            << std::endl;
-
-    }
-    catch (const std::exception& e) {
-
-        std::cerr
-            << "Error: "
-            << e.what()
-            << std::endl;
-
-        return 1;
-    }
-
-    Game game = GameEngine::createGame(prediction);
     GameEngine::computeGame(game);
 
-    std::cout << "Rounds: "
-            << game.rounds.size()
+
+    ValidationResult before =
+        Validator::validate(game);
+
+    std::cout << "Card issues before: "
+            << before.cardIssues.size()
             << std::endl;
 
-    std::cout << "North score: "
-            << game.northScore
+
+    int corrections =
+        ErrorResolver::resolveCardIssues(game);
+
+
+    ValidationResult after =
+        Validator::validate(game);
+
+    std::cout << "Corrections: "
+            << corrections
             << std::endl;
 
-    std::cout << "South score: "
-            << game.southScore
+    std::cout << "Card issues after: "
+            << after.cardIssues.size()
             << std::endl;
 
-    std::cout << "Total points: "
-            << game.northScore + game.southScore
-            << std::endl;
-
-    ValidationResult validation = Validator::validate(game);
-
-    std::cout << "Card issues: "
-            << validation.cardIssues.size()
-            << std::endl;
-
-    std::cout << "Leader issues: "
-            << validation.leaderIssues.size()
+    std::cout << "Leader issues after: "
+            << after.leaderIssues.size()
             << std::endl;
 
     return 0;
