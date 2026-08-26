@@ -13,23 +13,27 @@ ValidationResult Validator::validate(const Game& game) {
     // Count all cards selected in the 20 rounds
     for (const auto& round : game.rounds) {
 
-        int northType = static_cast<int>(round.north.type);
-        int southType =  static_cast<int>(round.south.type);
+        if (round.north.value >= 1 && round.north.value <= 10) {
+            int northType = static_cast<int>(round.north.type);
 
+            cardCount[northType][round.north.value]++;
 
-        cardCount[northType][round.north.value]++;
+            cardPositions[northType][round.north.value].push_back({
+                round.round,
+                Player::NORTH
+            });
+        }
 
-        cardPositions[northType][round.north.value].push_back({
-            round.round,
-            Player::NORTH
-        });
+        if (round.south.value >= 1 && round.south.value <= 10) {
+            int southType = static_cast<int>(round.south.type);
 
-        cardCount[southType][round.south.value]++;
+            cardCount[southType][round.south.value]++;
 
-        cardPositions[southType][round.south.value].push_back({
-            round.round,
-            Player::SOUTH
-        });
+            cardPositions[southType][round.south.value].push_back({
+                round.round,
+                Player::SOUTH
+            });
+        }
     }
 
     // Find missing and duplicated cards

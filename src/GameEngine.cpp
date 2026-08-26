@@ -29,13 +29,18 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
             );
         }
 
-        RoundResult round;
+        RoundResult round{};
 
         round.round = predictionRound.round;
 
-        // Initially select the highest confidence velues.
-        round.north = predictionRound.northDetected[0].card;
-        round.south = predictionRound.southDetected[0].card;
+        if (!predictionRound.northDetected.empty()) {
+            round.north = predictionRound.northDetected[0].card;
+        }
+
+        if (!predictionRound.southDetected.empty()) {
+            round.south = predictionRound.southDetected[0].card;
+        }
+
         round.leader = predictionRound.leaderDetected[0].player;
 
         game.rounds.push_back(round);
