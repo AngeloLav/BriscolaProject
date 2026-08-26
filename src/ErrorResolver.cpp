@@ -27,7 +27,7 @@ static bool isMissingCard(const Card& card, const ValidationResult& validation) 
  * Correct card recognition errors using the constraints of the Briscola deck.
  *
  * Duplicated cards are checked first. For every duplicated card, the resolver
- * looks at the alternative candidates detected by P2 and checks whether one
+ * looks at the alternative candidates detected and checks whether one
  * of them corresponds to a card currently missing from the game.
  *
  * Among the possible corrections, the one with the smallest confidence loss
@@ -40,8 +40,7 @@ static bool isMissingCard(const Card& card, const ValidationResult& validation) 
  * forced.
  *
  * Multiple UNKNOWN positions are left unresolved here because the deck
- * constraint alone cannot determine which missing card belongs to each
- * position. These cases can be handled later using stronger game constraints.
+ * constraint alone cannot determine which missing card belongs to each position. 
  */
 int ErrorResolver::resolveCardIssues(Game& game) {
 
@@ -204,4 +203,66 @@ int ErrorResolver::resolveCardIssues(Game& game) {
 
 
     return corrections;
+}
+
+
+
+int ErrorResolver::resolveBriscola(Game& game) {
+
+    if (game.prediction.briscolaDetected.empty()) {
+        return 0;
+    }
+
+
+    // Briscola correction requires all played cards to be known
+    for (const auto& round : game.rounds) {
+
+        if (round.north.value == 0 || round.south.value == 0) {
+            return 0;
+        }
+    }
+
+
+    Card originalBriscola = game.briscola;
+    Card bestBriscola = game.briscola;
+
+    int bestLeaderIssues = std::numeric_limits<int>::max();
+    double bestConfidence = -1.0;
+
+
+    // Try every briscola candidate detected by P2
+    for (const auto& candidate : game.prediction.briscolaDetected) {
+
+        game.briscola = candidate.card;
+
+        GameEngine::computeGame(game);
+
+        ValidationResult validation = Validator::validate(game);
+
+        int leaderIssues = static_cast<int>(validation.leaderIssues.size());
+
+
+        // Prefer the candidate producing fewer winner-leader inconsistencies.
+        // If two candidates are equally consistent, keep the one with higher confidence.
+        if (leaderIssues < bestLeaderIssues ||
+            (leaderIssues == bestLeaderIssues && candidate.confidence > bestConfidence)) {
+
+            bestLeaderIssues = leaderIssues;
+            bestConfidence = candidate.confidence;
+            bestBriscola = candidate.card;
+        }
+    }
+
+
+    game.briscola = bestBriscola;
+
+    // Winners and scores must correspond to the selected briscola
+    GameEngine::computeGame(game);
+
+
+    if (!sameCard(originalBriscola, bestBriscola)) {
+        return 1;
+    }
+
+    return 0;
 }
