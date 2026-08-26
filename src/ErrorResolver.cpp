@@ -1,230 +1,204 @@
 #include "ErrorResolver.h"
 #include "GameEngine.h"
 
-#include <cmath>
-#include <functional>
 #include <limits>
-#include <vector>
 
 
-// Returns true if two cards have the same type and value
 static bool sameCard(const Card& first, const Card& second) {
+
     return first.type == second.type && first.value == second.value;
+}
+
+
+static bool isMissingCard(const Card& card, const ValidationResult& validation) {
+
+    for (const auto& issue : validation.cardIssues) {
+
+        if (issue.type == CardIssueType::MISSING_CARD && sameCard(issue.card, card)) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 
 /*
  * Correct card recognition errors using the constraints of the Briscola deck.
  *
- * The resolver only works on suspicious positions:
- * - cards that appear more than once;
- * - cards for which the detection failed (UNKNOWN).
+ * Duplicated cards are checked first. For every duplicated card, the resolver
+ * looks at the alternative candidates detected by P2 and checks whether one
+ * of them corresponds to a card currently missing from the game.
  *
- * Missing cards are used as possible replacements. This also handles the case
- * where the first candidate is wrong and no alternative candidate was detected:
- * the consistency checker can still try one of the missing cards.
+ * Among the possible corrections, the one with the smallest confidence loss
+ * is selected. After every correction the game is validated again, so the
+ * remaining duplicated and missing cards are updated.
  *
- * The best solution is the one with the fewest card issues.
- * If more solutions have the same number of issues, recognition confidence is
- * used to choose between them. If they are still equivalent, no correction
- * is applied because the result would be ambiguous.
+ * A failed detection is represented by a card with value 0. After the normal
+ * duplicate correction, if only one UNKNOWN position and one missing card
+ * remain, the missing card can be assigned directly because the solution is
+ * forced.
  *
- * Winner/leader consistency is not considered here. Using missing cards should be enough
+ * Multiple UNKNOWN positions are left unresolved here because the deck
+ * constraint alone cannot determine which missing card belongs to each
+ * position. These cases can be handled later using stronger game constraints.
  */
 int ErrorResolver::resolveCardIssues(Game& game) {
 
-    ValidationResult validation = Validator::validate(game);
-
-    int originalIssueCount = static_cast<int>(validation.cardIssues.size());
-
-    std::vector<Card> missingCards;
-    std::vector<CardPosition> suspectPositions;
-
-
-    // Collect missing cards and positions containing duplicated cards
-    for (const auto& issue : validation.cardIssues) {
-
-        if (issue.type == CardIssueType::MISSING_CARD) {
-            missingCards.push_back(issue.card);
-        }
-
-        else if (issue.type == CardIssueType::DUPLICATE_CARD) {
-
-            for (const auto& position : issue.positions) {
-                suspectPositions.push_back(position);
-            }
-        }
-    }
-
-
-    // A position with no detected card is also suspicious
-    for (const auto& round : game.rounds) {
-
-        if (round.north.value == 0) {
-            suspectPositions.push_back({
-                round.round,
-                Player::NORTH
-            });
-        }
-
-        if (round.south.value == 0) {
-            suspectPositions.push_back({
-                round.round,
-                Player::SOUTH
-            });
-        }
-    }
-
-
-    if (suspectPositions.empty() || missingCards.empty()) {
-        return 0;
-    }
-
-
-    Game testGame = game;
-    Game bestGame = game;
-
-    int bestIssueCount = std::numeric_limits<int>::max();
-    double bestConfidence = -1.0;
-
-    bool solutionFound = false;
-    bool ambiguous = false;
-
-    std::vector<bool> usedMissing(missingCards.size(), false);
-
-
-    // Return the confidence assigned to a card.
-    // Cards generated only by the consistency checker have confidence 0.
-    auto getConfidence = [&](int roundIndex, Player player, const Card& card) {
-
-            const RoundPrediction& prediction = game.prediction.rounds[roundIndex];
-            const std::vector<CardDetected>& candidates = (player == Player::NORTH) ? prediction.northDetected : prediction.southDetected;
-
-            for (const auto& candidate : candidates) {
-
-                if (sameCard(candidate.card, card)) {
-                    return candidate.confidence;
-                }
-            }
-
-            return 0.0;
-        };
-
-
-    std::function<void(size_t, double)> tryAssignments;
-
-    tryAssignments = [&](size_t positionIndex, double confidenceSum) {
-
-            // All suspicious positions have been tested
-            if (positionIndex == suspectPositions.size()) {
-
-                ValidationResult result = Validator::validate(testGame);
-
-                int issueCount = static_cast<int>(result.cardIssues.size());
-
-
-                if (!solutionFound || issueCount < bestIssueCount || (issueCount == bestIssueCount && confidenceSum > bestConfidence + 1e-9)) {
-                    bestIssueCount = issueCount;
-                    bestConfidence = confidenceSum;
-                    bestGame = testGame;
-
-                    solutionFound = true;
-                    ambiguous = false;
-                }
-
-                else if (issueCount == bestIssueCount && std::abs(confidenceSum - bestConfidence) <= 1e-9) {
-                    ambiguous = true;
-                }
-
-                return;
-            }
-
-
-            const CardPosition& position = suspectPositions[positionIndex];
-
-            int roundIndex = position.round - 1;
-
-            Card& card = (position.player == Player::NORTH) ? testGame.rounds[roundIndex].north : testGame.rounds[roundIndex].south;
-            Card originalCard = card;
-
-
-            // If a card was detected, also try keeping the original prediction
-            if (originalCard.value != 0) {
-                double confidence =
-                    getConfidence(
-                        roundIndex,
-                        position.player,
-                        originalCard
-                    );
-
-                tryAssignments(positionIndex + 1, confidenceSum + confidence);
-            }
-
-
-            // Try each currently missing card in this position
-            for (size_t i = 0; i < missingCards.size(); i++) {
-
-                if (usedMissing[i]) {
-                    continue;
-                }
-
-                card = missingCards[i];
-                usedMissing[i] = true;
-
-                double confidence = getConfidence(roundIndex, position.player, missingCards[i]);
-
-                tryAssignments(positionIndex + 1, confidenceSum + confidence);
-
-                usedMissing[i] = false;
-                card = originalCard;
-            }
-
-
-            card = originalCard;
-        };
-
-
-    tryAssignments(0, 0.0);
-
-
-    // Do not change the game if the best solution is not an improvement
-    // or if two equally good solutions cannot be distinguished.
-    if (!solutionFound || bestIssueCount >= originalIssueCount || ambiguous) {
-        return 0;
-    }
-
-
     int corrections = 0;
 
-    for (size_t i = 0; i < game.rounds.size(); i++) {
+    while (true) {
 
-        if (!sameCard(game.rounds[i].north, bestGame.rounds[i].north)) {
-            corrections++;
+        ValidationResult validation = Validator::validate(game);
+
+        bool correctionFound = false;
+        double bestConfidenceLoss = std::numeric_limits<double>::max();
+
+        int bestRoundIndex = -1;
+        Player bestPlayer = Player::NORTH;
+        Card bestCard;
+
+
+        // Look at every duplicated card
+        for (const auto& issue : validation.cardIssues) {
+
+            if (issue.type != CardIssueType::DUPLICATE_CARD) {
+                continue;
+            }
+
+
+            // Check every position where the duplicated card appears
+            for (const auto& position : issue.positions) {
+
+                int roundIndex = position.round - 1;
+                const RoundPrediction& prediction = game.prediction.rounds[roundIndex];
+
+                const std::vector<CardDetected>* candidates;
+
+                if (position.player == Player::NORTH) {
+                    candidates = &prediction.northDetected;
+                }
+                else {
+                    candidates = &prediction.southDetected;
+                }
+
+
+                // Candidate 0 is the original top prediction.
+                // Check the alternatives starting from candidate 1.
+                for (size_t i = 1; i < candidates->size(); i++) {
+
+                    const CardDetected& candidate = (*candidates)[i];
+
+                    // The alternative is useful only if the card is currently missing
+                    if (!isMissingCard(candidate.card, validation)) {
+                        continue;
+                    }
+
+                    double confidenceLoss = (*candidates)[0].confidence - candidate.confidence;
+
+                    if (confidenceLoss < bestConfidenceLoss) {
+
+                        bestConfidenceLoss = confidenceLoss;
+                        bestRoundIndex = roundIndex;
+                        bestPlayer = position.player;
+                        bestCard = candidate.card;
+                        correctionFound = true;
+                    }
+                }
+            }
         }
 
-        if (!sameCard(game.rounds[i].south, bestGame.rounds[i].south)) {
+
+        // Apply the best duplicate correction and validate again
+        if (correctionFound) {
+
+            if (bestPlayer == Player::NORTH) {
+                game.rounds[bestRoundIndex].north = bestCard;
+            }
+            else {
+                game.rounds[bestRoundIndex].south = bestCard;
+            }
+
             corrections++;
+
+            continue;
         }
+
+
+        /*
+         * No duplicate correction was found.
+         * Check whether there is exactly one UNKNOWN position and
+         * exactly one missing card left.
+         */
+
+        int unknownCount = 0;
+        int unknownRoundIndex = -1;
+        Player unknownPlayer = Player::NORTH;
+
+
+        for (size_t i = 0; i < game.rounds.size(); i++) {
+
+            if (game.rounds[i].north.value == 0) {
+                unknownCount++;
+                unknownRoundIndex = static_cast<int>(i);
+                unknownPlayer = Player::NORTH;
+            }
+
+            if (game.rounds[i].south.value == 0) {
+                unknownCount++;
+                unknownRoundIndex = static_cast<int>(i);
+                unknownPlayer = Player::SOUTH;
+            }
+        }
+
+
+        int missingCount = 0;
+        Card missingCard;
+
+
+        for (const auto& issue : validation.cardIssues) {
+
+            if (issue.type == CardIssueType::MISSING_CARD) {
+                missingCount++;
+                missingCard = issue.card;
+            }
+        }
+
+
+        // One UNKNOWN + one missing card gives a forced correction
+        if (unknownCount == 1 && missingCount == 1) {
+
+            if (unknownPlayer == Player::NORTH) {
+                game.rounds[unknownRoundIndex].north = missingCard;
+            }
+            else {
+                game.rounds[unknownRoundIndex].south = missingCard;
+            }
+
+            corrections++;
+
+            continue;
+        }
+
+
+        // Nothing else can be safely corrected in this block
+        break;
     }
 
 
-    game = bestGame;
-
-
-    // Recompute the game only when all cards are known.
+    // Compute winners and scores only if all card detections are complete
     bool cardsComplete = true;
 
     for (const auto& round : game.rounds) {
 
-        if (round.north.value == 0 ||
-            round.south.value == 0) {
-
+        if (round.north.value == 0 || round.south.value == 0) {
             cardsComplete = false;
             break;
         }
     }
 
-    if (cardsComplete && game.briscola.value != 0) {
+
+    if (cardsComplete) {
         GameEngine::computeGame(game);
     }
 
