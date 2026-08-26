@@ -248,10 +248,10 @@ int ErrorResolver::resolveBriscola(Game& game) {
 
 
     /*
-     * UNKNOWN BRISCOLA:
-     * The value is unknown, but the suit can be inferred by trying
-     * all four suits and checking winner-leader consistency.
-     */
+    * UNKNOWN BRISCOLA:
+    * The suit is inferred by trying all four suits and checking
+    * winner-leader consistency.
+    */
 
     Game originalGame = game;
 
@@ -262,12 +262,11 @@ int ErrorResolver::resolveBriscola(Game& game) {
     bool ambiguous = false;
 
 
+    // Try all four possible suits
     for (int type = 0; type < 4; type++) {
 
         Card testBriscola{};
         testBriscola.type = static_cast<CardType>(type);
-
-        // Temporary valid value. Only the suit affects round winners.
         testBriscola.value = 1;
 
         game.briscola = testBriscola;
@@ -294,24 +293,69 @@ int ErrorResolver::resolveBriscola(Game& game) {
     }
 
 
-    // More than one suit gives the same result: do not choose arbitrarily
+    // Do not choose a suit if more than one gives the same result
     if (!solutionFound || ambiguous) {
         game = originalGame;
         return 0;
     }
 
 
-    // Suit resolved, value still unknown
+    // Restore the game and use the resolved suit
     game = originalGame;
 
     game.briscola.type = bestType;
-    game.briscola.value = 0;
+    game.briscola.value = 1;
+
+    // The suit is enough to compute the winner of round 17
+    GameEngine::computeGame(game);
 
 
-    /*
-     * computeGame can still be used here because BriscolaRules only needs
-     * the briscola suit to determine round winners.
-     */
+    // The loser of round 17 receives the briscola
+    Player briscolaPlayer;
+
+    if (game.rounds[16].winner == Player::NORTH) {
+        briscolaPlayer = Player::SOUTH;
+    }
+    else {
+        briscolaPlayer = Player::NORTH;
+    }
+
+
+    int possibleBriscole = 0;
+    Card possibleBriscola{};
+
+
+    // The briscola must be one of this player's last three cards
+    for (size_t i = 17; i < game.rounds.size(); i++) {
+
+        Card card;
+
+        if (briscolaPlayer == Player::NORTH) {
+            card = game.rounds[i].north;
+        }
+        else {
+            card = game.rounds[i].south;
+        }
+
+
+        if (card.type == bestType) {
+            possibleBriscole++;
+            possibleBriscola = card;
+        }
+    }
+
+
+    // Only one possible card: suit and value are both resolved
+    if (possibleBriscole == 1) {
+        game.briscola = possibleBriscola;
+    }
+    else {
+        // Suit known, but value still ambiguous or inconsistent
+        game.briscola.type = bestType;
+        game.briscola.value = 0;
+    }
+
+
     GameEngine::computeGame(game);
 
     return 1;
