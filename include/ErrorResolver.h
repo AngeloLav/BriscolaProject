@@ -32,24 +32,28 @@ public:
 
     /**
      * 2. BRISCOLA CORRECTION
-     * Corrects an incorrect briscola prediction using winner-leader consistency.
+     * Corrects an incorrect or missing briscola prediction using game consistency.
      *
-     * Every briscola candidate detected is tested by temporarily assigning it to
-     * the game and recomputing all round winners.
+     * In the normal case, every detected briscola candidate is tested by recomputing
+     * the game and counting winner-leader inconsistencies.
      *
-     * For each candidate, the game is validated and the number of inconsistencies
-     * between the winner of a round and the leader of the following round is counted.
+     * The candidate producing the fewest leader issues is preferred. If multiple
+     * candidates give the same result, the resolver checks whether the exact briscola
+     * appears among the last three cards of the player who should have received it.
+     * Recognition confidence is then used as the final tie-breaker.
      *
-     * The candidate producing the fewest leader issues is selected as the most
-     * consistent briscola for the game.
+     * If the briscola detection is UNKNOWN, all four possible suits are tested.
+     * The suit producing the fewest leader issues is preferred, while its presence
+     * among the last three cards of the expected player is used as an additional
+     * consistency check.
      *
-     * If multiple candidates produce the same number of issues, the candidate with
-     * the highest recognition confidence is selected.
+     * Once the suit is found, the resolver tries to determine the exact briscola
+     * value from those last three cards. If only one card of that suit is present,
+     * the briscola is fully resolved. Otherwise, the suit is kept but the value
+     * remains UNKNOWN.
      *
-     * After selecting the best candidate, the game is recomputed so that all winners
-     * and scores are consistent with the corrected briscola.
-     *
-     * If the briscola detection is UNKNOWN, try all four types and select the one producing the fewest leader issues
+     * The last-three-cards constraint is not used as a strict rejection rule because
+     * the winner of round 17 or one of the final card detections may still be wrong.
      */
     static int resolveBriscola(Game& game);
 

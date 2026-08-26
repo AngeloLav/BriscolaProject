@@ -202,7 +202,7 @@ int ErrorResolver::resolveBriscola(Game& game) {
 
     /*
      * NORMAL CASE:
-     * Try all briscola candidates detected
+     * Try all briscola candidates detected.
      */
     if (!game.prediction.briscolaDetected.empty()) {
 
@@ -211,6 +211,7 @@ int ErrorResolver::resolveBriscola(Game& game) {
 
         int bestLeaderIssues = std::numeric_limits<int>::max();
         double bestConfidence = -1.0;
+        bool bestPositionValid = false;
 
 
         for (const auto& candidate : game.prediction.briscolaDetected) {
@@ -224,11 +225,54 @@ int ErrorResolver::resolveBriscola(Game& game) {
             int leaderIssues = static_cast<int>(validation.leaderIssues.size());
 
 
+            // The loser of round 17 receives the briscola
+            Player briscolaPlayer;
+
+            if (game.rounds[16].winner == Player::NORTH) {
+                briscolaPlayer = Player::SOUTH;
+            }
+            else {
+                briscolaPlayer = Player::NORTH;
+            }
+
+
+            bool positionValid = false;
+
+
+            // Check if the exact briscola appears among that player's last three cards
+            for (size_t i = 17; i < game.rounds.size(); i++) {
+
+                Card card;
+
+                if (briscolaPlayer == Player::NORTH) {
+                    card = game.rounds[i].north;
+                }
+                else {
+                    card = game.rounds[i].south;
+                }
+
+
+                if (sameCard(card, candidate.card)) {
+                    positionValid = true;
+                    break;
+                }
+            }
+
+
+            /*
+             * Selection priority:
+             * 1. fewer leader issues
+             * 2. valid briscola position
+             * 3. higher recognition confidence
+             */
             if (leaderIssues < bestLeaderIssues ||
-                (leaderIssues == bestLeaderIssues && candidate.confidence > bestConfidence)) {
+                (leaderIssues == bestLeaderIssues && positionValid && !bestPositionValid) ||
+                (leaderIssues == bestLeaderIssues && positionValid == bestPositionValid &&
+                 candidate.confidence > bestConfidence)) {
 
                 bestLeaderIssues = leaderIssues;
                 bestConfidence = candidate.confidence;
+                bestPositionValid = positionValid;
                 bestBriscola = candidate.card;
             }
         }
@@ -248,21 +292,22 @@ int ErrorResolver::resolveBriscola(Game& game) {
 
 
     /*
-    * UNKNOWN BRISCOLA:
-    * The suit is inferred by trying all four suits and checking
-    * winner-leader consistency.
-    */
+     * UNKNOWN BRISCOLA:
+     * Try all four suits and select the one producing the fewest leader issues.
+     * The presence of that suit among the last three cards of the player who
+     * receives the briscola is used as a tie-breaker.
+     */
 
     Game originalGame = game;
 
     int bestLeaderIssues = std::numeric_limits<int>::max();
     CardType bestType = static_cast<CardType>(0);
 
+    bool bestPositionValid = false;
     bool solutionFound = false;
     bool ambiguous = false;
 
 
-    // Try all four possible suits
     for (int type = 0; type < 4; type++) {
 
         Card testBriscola{};
@@ -278,22 +323,60 @@ int ErrorResolver::resolveBriscola(Game& game) {
         int leaderIssues = static_cast<int>(validation.leaderIssues.size());
 
 
-        if (!solutionFound || leaderIssues < bestLeaderIssues) {
+        // The loser of round 17 receives the briscola
+        Player briscolaPlayer;
+
+        if (game.rounds[16].winner == Player::NORTH) {
+            briscolaPlayer = Player::SOUTH;
+        }
+        else {
+            briscolaPlayer = Player::NORTH;
+        }
+
+
+        bool positionValid = false;
+
+
+        // Check if a card of this suit appears among that player's last three cards
+        for (size_t i = 17; i < game.rounds.size(); i++) {
+
+            Card card;
+
+            if (briscolaPlayer == Player::NORTH) {
+                card = game.rounds[i].north;
+            }
+            else {
+                card = game.rounds[i].south;
+            }
+
+
+            if (card.type == testBriscola.type) {
+                positionValid = true;
+                break;
+            }
+        }
+
+
+        if (!solutionFound ||
+            leaderIssues < bestLeaderIssues ||
+            (leaderIssues == bestLeaderIssues && positionValid && !bestPositionValid)) {
 
             bestLeaderIssues = leaderIssues;
             bestType = testBriscola.type;
+            bestPositionValid = positionValid;
 
             solutionFound = true;
             ambiguous = false;
         }
-        else if (leaderIssues == bestLeaderIssues) {
+        else if (leaderIssues == bestLeaderIssues &&
+                 positionValid == bestPositionValid) {
 
             ambiguous = true;
         }
     }
 
 
-    // Do not choose a suit if more than one gives the same result
+    // More than one equally good suit: do not choose arbitrarily
     if (!solutionFound || ambiguous) {
         game = originalGame;
         return 0;
@@ -306,7 +389,6 @@ int ErrorResolver::resolveBriscola(Game& game) {
     game.briscola.type = bestType;
     game.briscola.value = 1;
 
-    // The suit is enough to compute the winner of round 17
     GameEngine::computeGame(game);
 
 
@@ -325,7 +407,7 @@ int ErrorResolver::resolveBriscola(Game& game) {
     Card possibleBriscola{};
 
 
-    // The briscola must be one of this player's last three cards
+    // Look for possible briscole among that player's last three cards
     for (size_t i = 17; i < game.rounds.size(); i++) {
 
         Card card;
@@ -350,7 +432,7 @@ int ErrorResolver::resolveBriscola(Game& game) {
         game.briscola = possibleBriscola;
     }
     else {
-        // Suit known, but value still ambiguous or inconsistent
+        // Suit is known, but the value cannot be determined yet
         game.briscola.type = bestType;
         game.briscola.value = 0;
     }
