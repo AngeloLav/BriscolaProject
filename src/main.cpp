@@ -93,12 +93,14 @@ int main(int argc, char** argv) {
             "json_games/briscola_game_test_errors_v2.json"
         );
     prediction.rounds[5].northDetected.clear();
+    prediction.briscolaDetected.clear();
 
     Game game = GameEngine::createGame(prediction);
 
     ValidationResult validationBefore = Validator::validate(game);
 
     int corrections = ErrorResolver::resolveCardIssues(game);
+    
 
     ValidationResult beforeBriscola = Validator::validate(game);
 
@@ -109,11 +111,11 @@ int main(int argc, char** argv) {
 
     ValidationResult afterBriscola = Validator::validate(game);
 
-    std::cout << "Briscola corrections: "
-            << briscolaCorrections << std::endl;
-
-    std::cout << "Leader issues after briscola: "
-            << afterBriscola.leaderIssues.size() << std::endl;
+    std::cout << "Briscola corrections: " << briscolaCorrections << std::endl;
+    std::cout << "Leader issues after briscola: " << afterBriscola.leaderIssues.size() << std::endl;
+    std::cout << "Briscola position valid: "
+          << Validator::isBriscolaPositionValid(game)
+          << std::endl;
 
     ValidationResult after =
         Validator::validate(game);
