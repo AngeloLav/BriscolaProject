@@ -83,3 +83,57 @@ ValidationResult Validator::validate(const Game& game) {
 
     return result;
 }
+
+bool Validator::isBriscolaPositionValid(const Game& game) {
+
+    if (game.rounds.size() < 20) {
+        return false;
+    }
+
+
+    // The loser of round 17 receives the briscola
+    Player briscolaPlayer;
+
+    if (game.rounds[16].winner == Player::NORTH) {
+        briscolaPlayer = Player::SOUTH;
+    }
+    else {
+        briscolaPlayer = Player::NORTH;
+    }
+
+
+    // Check the three cards played by that player in rounds 18-20
+    for (size_t i = 17; i < game.rounds.size(); i++) {
+
+        Card card;
+
+        if (briscolaPlayer == Player::NORTH) {
+            card = game.rounds[i].north;
+        }
+        else {
+            card = game.rounds[i].south;
+        }
+
+
+        // Complete briscola: check the exact card
+        if (game.briscola.value != 0) {
+
+            if (card.type == game.briscola.type &&
+                card.value == game.briscola.value) {
+
+                return true;
+            }
+        }
+
+        // UNKNOWN value: at least one card of the resolved suit must exist
+        else {
+
+            if (card.type == game.briscola.type) {
+                return true;
+            }
+        }
+    }
+
+
+    return false;
+}

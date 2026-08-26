@@ -54,4 +54,7 @@ class Validator {
 
     public:
         static ValidationResult validate(const Game& game);
+
+        // check if there's the briscola type in the last three rounds, and if the loser of round 17 is the one who receives it
+        static bool isBriscolaPositionValid(const Game& game);
 };
