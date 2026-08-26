@@ -191,11 +191,6 @@ int ErrorResolver::resolveCardIssues(Game& game) {
 
 int ErrorResolver::resolveBriscola(Game& game) {
 
-    if (game.prediction.briscolaDetected.empty()) {
-        return 0;
-    }
-
-
     // Briscola correction requires all played cards to be known
     for (const auto& round : game.rounds) {
 
@@ -205,17 +200,77 @@ int ErrorResolver::resolveBriscola(Game& game) {
     }
 
 
-    Card originalBriscola = game.briscola;
-    Card bestBriscola = game.briscola;
+    /*
+     * NORMAL CASE:
+     * Try all briscola candidates detected
+     */
+    if (!game.prediction.briscolaDetected.empty()) {
+
+        Card originalBriscola = game.briscola;
+        Card bestBriscola = game.briscola;
+
+        int bestLeaderIssues = std::numeric_limits<int>::max();
+        double bestConfidence = -1.0;
+
+
+        for (const auto& candidate : game.prediction.briscolaDetected) {
+
+            game.briscola = candidate.card;
+
+            GameEngine::computeGame(game);
+
+            ValidationResult validation = Validator::validate(game);
+
+            int leaderIssues = static_cast<int>(validation.leaderIssues.size());
+
+
+            if (leaderIssues < bestLeaderIssues ||
+                (leaderIssues == bestLeaderIssues && candidate.confidence > bestConfidence)) {
+
+                bestLeaderIssues = leaderIssues;
+                bestConfidence = candidate.confidence;
+                bestBriscola = candidate.card;
+            }
+        }
+
+
+        game.briscola = bestBriscola;
+
+        GameEngine::computeGame(game);
+
+
+        if (!sameCard(originalBriscola, bestBriscola)) {
+            return 1;
+        }
+
+        return 0;
+    }
+
+
+    /*
+     * UNKNOWN BRISCOLA:
+     * The value is unknown, but the suit can be inferred by trying
+     * all four suits and checking winner-leader consistency.
+     */
+
+    Game originalGame = game;
 
     int bestLeaderIssues = std::numeric_limits<int>::max();
-    double bestConfidence = -1.0;
+    CardType bestType = static_cast<CardType>(0);
+
+    bool solutionFound = false;
+    bool ambiguous = false;
 
 
-    // Try every briscola candidate detected by P2
-    for (const auto& candidate : game.prediction.briscolaDetected) {
+    for (int type = 0; type < 4; type++) {
 
-        game.briscola = candidate.card;
+        Card testBriscola{};
+        testBriscola.type = static_cast<CardType>(type);
+
+        // Temporary valid value. Only the suit affects round winners.
+        testBriscola.value = 1;
+
+        game.briscola = testBriscola;
 
         GameEngine::computeGame(game);
 
@@ -224,27 +279,40 @@ int ErrorResolver::resolveBriscola(Game& game) {
         int leaderIssues = static_cast<int>(validation.leaderIssues.size());
 
 
-        // Prefer the candidate producing fewer winner-leader inconsistencies.
-        // If two candidates are equally consistent, keep the one with higher confidence.
-        if (leaderIssues < bestLeaderIssues ||
-            (leaderIssues == bestLeaderIssues && candidate.confidence > bestConfidence)) {
+        if (!solutionFound || leaderIssues < bestLeaderIssues) {
 
             bestLeaderIssues = leaderIssues;
-            bestConfidence = candidate.confidence;
-            bestBriscola = candidate.card;
+            bestType = testBriscola.type;
+
+            solutionFound = true;
+            ambiguous = false;
+        }
+        else if (leaderIssues == bestLeaderIssues) {
+
+            ambiguous = true;
         }
     }
 
 
-    game.briscola = bestBriscola;
-
-    // Winners and scores must correspond to the selected briscola
-    GameEngine::computeGame(game);
-
-
-    if (!sameCard(originalBriscola, bestBriscola)) {
-        return 1;
+    // More than one suit gives the same result: do not choose arbitrarily
+    if (!solutionFound || ambiguous) {
+        game = originalGame;
+        return 0;
     }
 
-    return 0;
+
+    // Suit resolved, value still unknown
+    game = originalGame;
+
+    game.briscola.type = bestType;
+    game.briscola.value = 0;
+
+
+    /*
+     * computeGame can still be used here because BriscolaRules only needs
+     * the briscola suit to determine round winners.
+     */
+    GameEngine::computeGame(game);
+
+    return 1;
 }

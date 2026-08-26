@@ -49,9 +49,7 @@ public:
      * After selecting the best candidate, the game is recomputed so that all winners
      * and scores are consistent with the corrected briscola.
      *
-     * If the briscola detection is UNKNOWN, the suit can later be inferred by testing
-     * the possible suits against winner-leader consistency, while the card value can
-     * be resolved separately using the remaining deck constraints and confidence.
+     * If the briscola detection is UNKNOWN, try all four types and select the one producing the fewest leader issues
      */
     static int resolveBriscola(Game& game);
 

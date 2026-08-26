@@ -5,18 +5,17 @@
 
 
 Game GameEngine::createGame(const GamePrediction& prediction) {
-    if (prediction.briscolaDetected.empty()) {
-        throw std::runtime_error("No briscola candidate available");
-    }
 
-    Game game;
+    Game game{};
 
     // Preserve all original predictions for future validation and error correction
     game.prediction = prediction;
 
-    // Select the highest-confidence briscola candidate
-    game.briscola = prediction.briscolaDetected[0].card;
-
+    // Select the highest-confidence briscola candidate if available
+    if (!prediction.briscolaDetected.empty()) {
+        game.briscola = prediction.briscolaDetected[0].card;
+    }
+    
     bool cardsComplete = true;
 
     for (const auto& predictionRound : prediction.rounds) {
@@ -51,7 +50,7 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
         game.rounds.push_back(round);
     }
 
-    if (cardsComplete) {
+    if (cardsComplete && game.briscola.value != 0) {
         computeGame(game);
     }
 
