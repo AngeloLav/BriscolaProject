@@ -13,6 +13,24 @@ static bool sameCard(const Card& first, const Card& second) {
 }
 
 
+/*
+ * Correct card recognition errors using the constraints of the Briscola deck.
+ *
+ * The resolver only works on suspicious positions:
+ * - cards that appear more than once;
+ * - cards for which the detection failed (UNKNOWN).
+ *
+ * Missing cards are used as possible replacements. This also handles the case
+ * where the first candidate is wrong and no alternative candidate was detected:
+ * the consistency checker can still try one of the missing cards.
+ *
+ * The best solution is the one with the fewest card issues.
+ * If more solutions have the same number of issues, recognition confidence is
+ * used to choose between them. If they are still equivalent, no correction
+ * is applied because the result would be ambiguous.
+ *
+ * Winner/leader consistency is not considered here. Using missing cards should be enough
+ */
 int ErrorResolver::resolveCardIssues(Game& game) {
 
     ValidationResult validation = Validator::validate(game);
