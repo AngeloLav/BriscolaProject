@@ -17,28 +17,33 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
     // Select the highest-confidence briscola candidate
     game.briscola = prediction.briscolaDetected[0].card;
 
+    bool cardsComplete = true;
 
     for (const auto& predictionRound : prediction.rounds) {
 
-        if (predictionRound.northDetected.empty() ||
-            predictionRound.southDetected.empty() ||
-            predictionRound.leaderDetected.empty()) {
-
+        if (predictionRound.leaderDetected.empty()) {
             throw std::runtime_error(
-                "Missing candidate in round " + std::to_string(predictionRound.round)
+                "Missing leader candidate in round " +
+                std::to_string(predictionRound.round)
             );
         }
 
-        RoundResult round{};
+        RoundResult round{};   // inizializza tutto a 0
 
         round.round = predictionRound.round;
 
         if (!predictionRound.northDetected.empty()) {
             round.north = predictionRound.northDetected[0].card;
         }
+        else {
+            cardsComplete = false;
+        }
 
         if (!predictionRound.southDetected.empty()) {
             round.south = predictionRound.southDetected[0].card;
+        }
+        else {
+            cardsComplete = false;
         }
 
         round.leader = predictionRound.leaderDetected[0].player;
@@ -46,7 +51,9 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
         game.rounds.push_back(round);
     }
 
-    computeGame(game);
+    if (cardsComplete) {
+        computeGame(game);
+    }
 
     return game;
 }

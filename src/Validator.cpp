@@ -13,7 +13,8 @@ ValidationResult Validator::validate(const Game& game) {
     // Count all cards selected in the 20 rounds
     for (const auto& round : game.rounds) {
 
-        if (round.north.value >= 1 && round.north.value <= 10) {
+        if (round.north.value != 0) {
+
             int northType = static_cast<int>(round.north.type);
 
             cardCount[northType][round.north.value]++;
@@ -24,7 +25,9 @@ ValidationResult Validator::validate(const Game& game) {
             });
         }
 
-        if (round.south.value >= 1 && round.south.value <= 10) {
+
+        if (round.south.value != 0) {
+
             int southType = static_cast<int>(round.south.type);
 
             cardCount[southType][round.south.value]++;

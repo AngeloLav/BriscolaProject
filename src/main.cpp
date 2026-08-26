@@ -92,24 +92,23 @@ int main(int argc, char** argv) {
         JsonReader::readGamePrediction(
             "json_games/briscola_game_test_errors_v2.json"
         );
+    std::cout << "BEFORE CLEAR" << std::endl;
 
-    Game game =
-        GameEngine::createGame(prediction);
+    prediction.rounds[5].northDetected.clear();
 
-    GameEngine::computeGame(game);
+    std::cout << "BEFORE CREATE GAME" << std::endl;
 
+    Game game = GameEngine::createGame(prediction);
 
-    ValidationResult before =
-        Validator::validate(game);
+    std::cout << "AFTER CREATE GAME" << std::endl;
 
-    std::cout << "Card issues before: "
-            << before.cardIssues.size()
-            << std::endl;
+    ValidationResult validationBefore = Validator::validate(game);
 
+    std::cout << "AFTER VALIDATOR" << std::endl;
 
-    int corrections =
-        ErrorResolver::resolveCardIssues(game);
+    int corrections = ErrorResolver::resolveCardIssues(game);
 
+    std::cout << "AFTER ERROR RESOLVER" << std::endl;
 
     ValidationResult after =
         Validator::validate(game);
