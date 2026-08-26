@@ -23,25 +23,7 @@ static bool isMissingCard(const Card& card, const ValidationResult& validation) 
 }
 
 
-/*
- * Correct card recognition errors using the constraints of the Briscola deck.
- *
- * Duplicated cards are checked first. For every duplicated card, the resolver
- * looks at the alternative candidates detected and checks whether one
- * of them corresponds to a card currently missing from the game.
- *
- * Among the possible corrections, the one with the smallest confidence loss
- * is selected. After every correction the game is validated again, so the
- * remaining duplicated and missing cards are updated.
- *
- * A failed detection is represented by a card with value 0. After the normal
- * duplicate correction, if only one UNKNOWN position and one missing card
- * remain, the missing card can be assigned directly because the solution is
- * forced.
- *
- * Multiple UNKNOWN positions are left unresolved here because the deck
- * constraint alone cannot determine which missing card belongs to each position. 
- */
+
 int ErrorResolver::resolveCardIssues(Game& game) {
 
     int corrections = 0;
