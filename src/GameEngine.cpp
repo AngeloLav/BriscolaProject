@@ -20,14 +20,7 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
 
     for (const auto& predictionRound : prediction.rounds) {
 
-        if (predictionRound.leaderDetected.empty()) {
-            throw std::runtime_error(
-                "Missing leader candidate in round " +
-                std::to_string(predictionRound.round)
-            );
-        }
-
-        RoundResult round{};   // inizializza tutto a 0
+        RoundResult round{};
 
         round.round = predictionRound.round;
 
@@ -45,7 +38,13 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
             cardsComplete = false;
         }
 
-        round.leader = predictionRound.leaderDetected[0].player;
+        if (!predictionRound.leaderDetected.empty()) {
+            round.leader = predictionRound.leaderDetected[0].player;
+        }
+        else {
+            // Temporary value, resolved in block 3
+            round.leader = Player::NORTH;
+        }
 
         game.rounds.push_back(round);
     }

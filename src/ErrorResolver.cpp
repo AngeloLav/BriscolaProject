@@ -161,7 +161,7 @@ int ErrorResolver::resolveCardIssues(Game& game) {
             continue;
         }
 
-        
+
         /*
         * If there are still missing cards, check if they correspond exactly to
         * the UNKNOWN positions.
@@ -514,6 +514,27 @@ int ErrorResolver::resolveBriscola(Game& game) {
 int ErrorResolver::resolveLeaderIssues(Game& game) {
 
     int corrections = 0;
+
+    /*
+    * Resolve missing leader detections.
+    * From round 2 onward, the leader must be the winner
+    * of the previous round.
+    */
+    for (size_t i = 1; i < game.rounds.size(); i++) {
+
+        if (game.prediction.rounds[i].leaderDetected.empty()) {
+
+            // Recompute winners using all leaders resolved up to this point
+            GameEngine::computeGame(game);
+
+            game.rounds[i].leader = game.rounds[i - 1].winner;
+
+            corrections++;
+        }
+    }
+    
+    // Recompute the game after resolving UNKNOWN leaders
+    GameEngine::computeGame(game);
 
 
     while (true) {
