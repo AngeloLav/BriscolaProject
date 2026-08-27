@@ -100,8 +100,8 @@ int main(int argc, char** argv) {
 
 
     // Two failed card detections
-    prediction.rounds[5].northDetected.clear();
-    prediction.rounds[12].southDetected.clear();
+    prediction.rounds[7].leaderDetected.clear();
+    prediction.rounds[8].leaderDetected.clear();
 
 
     Game game = GameEngine::createGame(prediction);
