@@ -19,6 +19,7 @@ add_executable(
     src/BriscolaRules.cpp
     src/Validator.cpp
     src/ErrorResolver.cpp
+    src/OutputWriter.cpp
 )
 
 target_link_libraries(

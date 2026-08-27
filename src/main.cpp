@@ -19,6 +19,7 @@
 #include "GameEngine.h"
 #include "BriscolaRules.h"
 #include "ErrorResolver.h"
+#include "OutputWriter.h"
 
 
 
@@ -158,7 +159,9 @@ int main(int argc, char** argv) {
                 leaderCorrections
             << std::endl;
 
+    OutputWriter::writeTxt(game, "results/game1output.txt");
 
+    OutputWriter::writeCsv(game, "results/game1results.csv");
 
     return 0;
 }
