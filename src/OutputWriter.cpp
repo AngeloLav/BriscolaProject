@@ -95,15 +95,15 @@ void OutputWriter::writeCsv(const Game& game, const std::string& filePath) {
 
 
     output << "Round,"
-           << "North Number,"
-           << "North Suit,"
-           << "South Number,"
-           << "South Suit,"
-           << "Briscola Number,"
-           << "Briscola Suit,"
-           << "Leader,"
-           << "Winner,"
-           << "Points\n";
+        << "North_Number,"
+        << "North_Suit,"
+        << "South_Number,"
+        << "South_Suit,"
+        << "Briscola_Number,"
+        << "Briscola_Suit,"
+        << "Leader,"
+        << "Winner,"
+        << "Points\n";
 
 
     for (const auto& round : game.rounds) {
