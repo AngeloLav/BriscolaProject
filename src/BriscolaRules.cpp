@@ -55,9 +55,6 @@ Player BriscolaRules::findWinner(const Card& north, const Card& south, const Car
 
     Player secondPlayer = (leader == Player::NORTH) ? Player::SOUTH : Player::NORTH;
 
-    bool firstIsBriscola = 0;
-    bool secondIsBriscola = 0;
-
     bool firstIsBriscola = firstCard.type == briscola.type;
     bool secondIsBriscola = secondCard.type == briscola.type;
 
