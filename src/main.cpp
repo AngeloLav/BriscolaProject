@@ -102,9 +102,6 @@ int main(int argc, char** argv) {
     // Two failed card detections
     prediction.rounds[5].northDetected.clear();
     prediction.rounds[12].southDetected.clear();
-    prediction.rounds[17].northDetected.clear();
-    prediction.rounds[17].southDetected.clear();
-    prediction.rounds[8].northDetected.clear();
 
 
     Game game = GameEngine::createGame(prediction);
@@ -118,33 +115,37 @@ int main(int argc, char** argv) {
 
     int cardCorrections = ErrorResolver::resolveCardIssues(game);
 
-    ValidationResult afterCards = Validator::validate(game);
-
-    std::cout << "Card corrections: "
-              << cardCorrections << std::endl;
-
-    std::cout << "Card issues after cards: "
-              << afterCards.cardIssues.size() << std::endl;
-
-
     int briscolaCorrections = ErrorResolver::resolveBriscola(game);
 
     int leaderCorrections = ErrorResolver::resolveLeaderIssues(game);
 
+
+    // Final briscola check        
+    briscolaCorrections += ErrorResolver::resolveBriscola(game);
+
     ValidationResult finalValidation = Validator::validate(game);
 
 
+    std::cout << "Card corrections: "
+            << cardCorrections << std::endl;
+
     std::cout << "Briscola corrections: "
-              << briscolaCorrections << std::endl;
+            << briscolaCorrections << std::endl;
 
     std::cout << "Leader corrections: "
-              << leaderCorrections << std::endl;
+            << leaderCorrections << std::endl;
 
     std::cout << "Card issues after: "
-              << finalValidation.cardIssues.size() << std::endl;
+            << finalValidation.cardIssues.size() << std::endl;
 
     std::cout << "Leader issues after: "
-              << finalValidation.leaderIssues.size() << std::endl;
+            << finalValidation.leaderIssues.size() << std::endl;
+
+    std::cout << "Corrections: "
+            << cardCorrections +
+                briscolaCorrections +
+                leaderCorrections
+            << std::endl;
 
 
 
