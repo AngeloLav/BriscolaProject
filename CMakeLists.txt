@@ -20,6 +20,7 @@ add_executable(
     src/Validator.cpp
     src/ErrorResolver.cpp
     src/OutputWriter.cpp
+    src/MetricsEvaluator.cpp
 )
 
 target_link_libraries(
