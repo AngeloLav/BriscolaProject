@@ -22,17 +22,6 @@
 
 
 
-static void printCardType(CardType type) {
-
-    switch (type) {
-        case CardType::DENARI:  std::cout << "DENARI"; break;
-        case CardType::BASTONI: std::cout << "BASTONI"; break;
-        case CardType::COPPE:   std::cout << "COPPE"; break;
-        case CardType::SPADE:   std::cout << "SPADE"; break;
-    }
-}
-
-
 int main(int argc, char** argv) {
  /*  
     if (argc < 2) {
@@ -101,7 +90,7 @@ int main(int argc, char** argv) {
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
     
     GamePrediction prediction =
-        JsonReader::readGamePrediction("json_games/briscola_test_unknown_exact.json");
+        JsonReader::readGamePrediction("json_games/briscola_test_leader_card_swap.json");
 
     Game game = GameEngine::createGame(prediction);
 
@@ -114,35 +103,44 @@ int main(int argc, char** argv) {
 
     int cardCorrections = ErrorResolver::resolveCardIssues(game);
 
-    ValidationResult beforeBriscola = Validator::validate(game);
+    ValidationResult afterCards = Validator::validate(game);
 
     std::cout << "Card corrections: "
               << cardCorrections << std::endl;
 
-    std::cout << "Card issues after: "
-              << beforeBriscola.cardIssues.size() << std::endl;
+    std::cout << "Card issues after cards: "
+              << afterCards.cardIssues.size() << std::endl;
 
 
     int briscolaCorrections = ErrorResolver::resolveBriscola(game);
 
-    ValidationResult afterBriscola = Validator::validate(game);
-
+    ValidationResult beforeLeader = Validator::validate(game);
 
     std::cout << "Briscola corrections: "
               << briscolaCorrections << std::endl;
 
-    std::cout << "Leader issues after briscola: "
-              << afterBriscola.leaderIssues.size() << std::endl;
+    std::cout << "Leader issues before leader resolver: "
+              << beforeLeader.leaderIssues.size() << std::endl;
 
 
-    std::cout << "Briscola: ";
-    printCardType(game.briscola.type);
+    int leaderCorrections = ErrorResolver::resolveLeaderIssues(game);
 
-    std::cout << " " << game.briscola.value << std::endl;
+    ValidationResult finalValidation = Validator::validate(game);
 
+    std::cout << "Leader corrections: "
+              << leaderCorrections << std::endl;
+
+    std::cout << "Card issues after: "
+              << finalValidation.cardIssues.size() << std::endl;
+
+    std::cout << "Leader issues after: "
+              << finalValidation.leaderIssues.size() << std::endl;
 
     std::cout << "Corrections: "
-              << cardCorrections + briscolaCorrections << std::endl;
+              << cardCorrections +
+                 briscolaCorrections +
+                 leaderCorrections
+              << std::endl;
 
 
     return 0;
