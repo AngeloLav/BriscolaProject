@@ -161,61 +161,72 @@ int ErrorResolver::resolveCardIssues(Game& game) {
             continue;
         }
 
-
+        
         /*
-         * No duplicate correction was found.
-         * Check whether there is exactly one UNKNOWN position and
-         * exactly one missing card left.
-         */
+        * If there are still missing cards, check if they correspond exactly to
+        * the UNKNOWN positions.
+        */
 
-        int unknownCount = 0;
-        int unknownRoundIndex = -1;
-        Player unknownPlayer = Player::NORTH;
+        std::vector<CardPosition> unknownPositions;
+        std::vector<Card> missingCards;
 
 
+        // Find UNKNOWN positions
         for (size_t i = 0; i < game.rounds.size(); i++) {
 
             if (game.rounds[i].north.value == 0) {
-                unknownCount++;
-                unknownRoundIndex = static_cast<int>(i);
-                unknownPlayer = Player::NORTH;
+                unknownPositions.push_back({
+                    static_cast<int>(i + 1),
+                    Player::NORTH
+                });
             }
 
             if (game.rounds[i].south.value == 0) {
-                unknownCount++;
-                unknownRoundIndex = static_cast<int>(i);
-                unknownPlayer = Player::SOUTH;
+                unknownPositions.push_back({
+                    static_cast<int>(i + 1),
+                    Player::SOUTH
+                });
             }
         }
 
 
-        int missingCount = 0;
-        Card missingCard;
-
-
+        // Find missing cards
         for (const auto& issue : validation.cardIssues) {
 
             if (issue.type == CardIssueType::MISSING_CARD) {
-                missingCount++;
-                missingCard = issue.card;
+                missingCards.push_back(issue.card);
             }
         }
 
 
-        // One UNKNOWN + one missing card gives a forced correction
-        if (unknownCount == 1 && missingCount == 1) {
+        /*
+        * If the remaining missing cards correspond exactly to the UNKNOWN
+        * positions, assign them in order.
+        *
+        * With one UNKNOWN the solution is forced.
+        * With multiple UNKNOWNs the assignment is only a temporary consistent
+        * solution that can later be improved using winner-leader constraints.
+        */
+        if (!unknownPositions.empty() &&
+            unknownPositions.size() == missingCards.size()) {
 
-            if (unknownPlayer == Player::NORTH) {
-                game.rounds[unknownRoundIndex].north = missingCard;
-            }
-            else {
-                game.rounds[unknownRoundIndex].south = missingCard;
-            }
+            for (size_t i = 0; i < unknownPositions.size(); i++) {
 
-            corrections++;
+                int roundIndex = unknownPositions[i].round - 1;
+
+                if (unknownPositions[i].player == Player::NORTH) {
+                    game.rounds[roundIndex].north = missingCards[i];
+                }
+                else {
+                    game.rounds[roundIndex].south = missingCards[i];
+                }
+
+                corrections++;
+            }
 
             continue;
         }
+
 
 
         // Nothing else can be safely corrected in this block

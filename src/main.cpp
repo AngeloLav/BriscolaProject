@@ -92,13 +92,28 @@ int main(int argc, char** argv) {
     GamePrediction prediction =
         JsonReader::readGamePrediction("json_games/briscola_test_leader_card_swap.json");
 
+    // Known briscola: this test is only for UNKNOWN played cards
+    prediction.briscolaDetected.push_back({
+        { CardType::DENARI, 6 },
+        0.99
+    });
+
+
+    // Two failed card detections
+    prediction.rounds[5].northDetected.clear();
+    prediction.rounds[12].southDetected.clear();
+    prediction.rounds[17].northDetected.clear();
+    prediction.rounds[17].southDetected.clear();
+    prediction.rounds[8].northDetected.clear();
+
+
     Game game = GameEngine::createGame(prediction);
 
 
-    ValidationResult beforeCards = Validator::validate(game);
+    ValidationResult before = Validator::validate(game);
 
     std::cout << "Card issues before: "
-              << beforeCards.cardIssues.size() << std::endl;
+              << before.cardIssues.size() << std::endl;
 
 
     int cardCorrections = ErrorResolver::resolveCardIssues(game);
@@ -114,18 +129,13 @@ int main(int argc, char** argv) {
 
     int briscolaCorrections = ErrorResolver::resolveBriscola(game);
 
-    ValidationResult beforeLeader = Validator::validate(game);
-
-    std::cout << "Briscola corrections: "
-              << briscolaCorrections << std::endl;
-
-    std::cout << "Leader issues before leader resolver: "
-              << beforeLeader.leaderIssues.size() << std::endl;
-
-
     int leaderCorrections = ErrorResolver::resolveLeaderIssues(game);
 
     ValidationResult finalValidation = Validator::validate(game);
+
+
+    std::cout << "Briscola corrections: "
+              << briscolaCorrections << std::endl;
 
     std::cout << "Leader corrections: "
               << leaderCorrections << std::endl;
@@ -136,11 +146,6 @@ int main(int argc, char** argv) {
     std::cout << "Leader issues after: "
               << finalValidation.leaderIssues.size() << std::endl;
 
-    std::cout << "Corrections: "
-              << cardCorrections +
-                 briscolaCorrections +
-                 leaderCorrections
-              << std::endl;
 
 
     return 0;
