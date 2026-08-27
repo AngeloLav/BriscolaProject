@@ -2,4 +2,6 @@ build/
 .vscode/
 
 videos/
-results/
+data/*
+!data/results
+data/results/*

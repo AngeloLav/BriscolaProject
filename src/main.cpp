@@ -20,15 +20,88 @@
 #include "BriscolaRules.h"
 #include "ErrorResolver.h"
 #include "OutputWriter.h"
-
+#include "MetricsEvaluator.h"
 
 
 int main(int argc, char** argv) {
- /*  
-    if (argc < 2) {
-        std::cout << "Use the program with: ./briscola <video.mp4>" << std::endl;
+
+    if (argc != 2) {
+        std::cout << "Use the program with: ./briscola <game_folder>"
+                  << std::endl;
         return 1;
     }
+
+
+    std::string gameFolder = argv[1];
+
+    if (!gameFolder.empty() &&
+        gameFolder.back() != '/' &&
+        gameFolder.back() != '\\') {
+
+        gameFolder += "/";
+    }
+
+
+    std::string folderWithoutSlash =
+        gameFolder.substr(0, gameFolder.size() - 1);
+
+    size_t lastSlash =
+        folderWithoutSlash.find_last_of("/\\");
+
+    std::string gameName =
+        (lastSlash == std::string::npos)
+            ? folderWithoutSlash
+            : folderWithoutSlash.substr(lastSlash + 1);
+
+
+    std::string dataFolder =
+        (lastSlash == std::string::npos)
+            ? ""
+            : folderWithoutSlash.substr(0, lastSlash + 1);
+
+
+    std::string jsonPath =
+        gameFolder + "prediction.json";
+
+    std::string resultsFolder =
+        dataFolder + "results/";
+
+
+    // Find the ground truth CSV inside the game folder
+    std::vector<cv::String> csvFiles;
+
+    cv::glob(
+        gameFolder + "*.csv",
+        csvFiles,
+        false
+    );
+
+
+    if (csvFiles.empty()) {
+
+        std::cerr << "No CSV ground truth found in: "
+                  << gameFolder << std::endl;
+
+        return 1;
+    }
+
+
+    if (csvFiles.size() > 1) {
+
+        std::cerr << "More than one CSV found in: "
+                  << gameFolder << std::endl;
+
+        return 1;
+    }
+
+
+    std::string groundTruthPath =
+        csvFiles[0];
+
+
+
+    /*
+    // intanto commento questo sotto
 
     // Analyzing video and check to see if the path is correct
     std::string videoPath = argv[1];
@@ -86,13 +159,14 @@ int main(int argc, char** argv) {
 
         frameIndex++;
     }
-*/
+    */
 
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
-    
-    GamePrediction prediction =
-        JsonReader::readGamePrediction("json_games/briscola_game_test_clean_v2.json");
 
+    GamePrediction prediction =
+        JsonReader::readGamePrediction(jsonPath);
+
+    /*
     // Known briscola: this test is only for UNKNOWN played cards
     prediction.briscolaDetected.push_back({
         { CardType::DENARI, 6 },
@@ -113,6 +187,7 @@ int main(int argc, char** argv) {
 
     // Leader detection is wrong
     prediction.rounds[9].leaderDetected[0].player = Player::SOUTH;
+    */
 
 
 
@@ -159,9 +234,44 @@ int main(int argc, char** argv) {
                 leaderCorrections
             << std::endl;
 
-    OutputWriter::writeTxt(game, "results/game1output.txt");
+    OutputWriter::writeTxt(
+        game,
+        resultsFolder + gameName + "_output.txt"
+    );
 
-    OutputWriter::writeCsv(game, "results/game1results.csv");
+    OutputWriter::writeCsv(
+        game,
+        resultsFolder + gameName + "_results.csv"
+    );
+
+    std::cout << "\nGround truth: " << groundTruthPath << std::endl;
+    std::cout << "Evaluating metrics..." << std::endl;
+
+    try {
+
+        MetricsResult metrics =
+            MetricsEvaluator::evaluate(
+                game,
+                groundTruthPath
+            );
+
+        std::cout << "Metrics calculated." << std::endl;
+
+        MetricsEvaluator::printMetrics(metrics);
+
+        MetricsEvaluator::writeMetrics(
+            metrics,
+            resultsFolder + gameName + "_metrics.txt"
+        );
+    }
+    catch (const std::exception& e) {
+
+        std::cerr << "METRICS ERROR: "
+                << e.what()
+                << std::endl;
+
+        return 1;
+    }
 
     return 0;
 }
