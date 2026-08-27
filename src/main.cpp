@@ -90,7 +90,7 @@ int main(int argc, char** argv) {
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
     
     GamePrediction prediction =
-        JsonReader::readGamePrediction("json_games/briscola_test_leader_card_swap.json");
+        JsonReader::readGamePrediction("json_games/briscola_game_test_clean_v2.json");
 
     // Known briscola: this test is only for UNKNOWN played cards
     prediction.briscolaDetected.push_back({
@@ -101,7 +101,18 @@ int main(int argc, char** argv) {
 
     // Two failed card detections
     prediction.rounds[7].leaderDetected.clear();
+    prediction.rounds[7].southDetected.clear();
+    prediction.rounds[7].northDetected.clear();
+
+    
     prediction.rounds[8].leaderDetected.clear();
+    prediction.rounds[8].southDetected.clear();
+    prediction.rounds[8].northDetected.clear();
+
+
+    // Leader detection is wrong
+    prediction.rounds[9].leaderDetected[0].player = Player::SOUTH;
+
 
 
     Game game = GameEngine::createGame(prediction);

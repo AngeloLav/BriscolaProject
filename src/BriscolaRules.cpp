@@ -58,13 +58,8 @@ Player BriscolaRules::findWinner(const Card& north, const Card& south, const Car
     bool firstIsBriscola = 0;
     bool secondIsBriscola = 0;
 
-    if (firstIsBriscola = firstCard.type == briscola.type) {
-        firstIsBriscola = true;
-    }
-
-    if (secondIsBriscola = secondCard.type == briscola.type) {
-        secondIsBriscola = true;
-    }   
+    bool firstIsBriscola = firstCard.type == briscola.type;
+    bool secondIsBriscola = secondCard.type == briscola.type;
 
     // If at least one briscola card is played.
     if (firstIsBriscola || secondIsBriscola) {
