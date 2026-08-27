@@ -2,6 +2,7 @@
 #include "GameEngine.h"
 
 #include <limits>
+#include <cmath>
 
 
 static bool sameCard(const Card& first, const Card& second) {
@@ -15,6 +16,61 @@ static bool isMissingCard(const Card& card, const ValidationResult& validation) 
     for (const auto& issue : validation.cardIssues) {
 
         if (issue.type == CardIssueType::MISSING_CARD && sameCard(issue.card, card)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+
+
+static double getCardConfidence(const Game& game, int roundIndex, Player player, const Card& card) {
+
+    const RoundPrediction& prediction = game.prediction.rounds[roundIndex];
+
+    const std::vector<CardDetected>& candidates =
+        (player == Player::NORTH) ? prediction.northDetected : prediction.southDetected;
+
+    for (const auto& candidate : candidates) {
+
+        if (sameCard(candidate.card, card)) {
+            return candidate.confidence;
+        }
+    }
+
+    return 0.0;
+}
+
+
+static double getLeaderConfidence(const Game& game, int roundIndex, Player player) {
+
+    const RoundPrediction& prediction = game.prediction.rounds[roundIndex];
+
+    for (const auto& candidate : prediction.leaderDetected) {
+
+        if (candidate.player == player) {
+            return candidate.confidence;
+        }
+    }
+
+    return 0.0;
+}
+
+
+static bool findCardPosition(const Game& game, const Card& card, int& roundIndex, Player& player) {
+
+    for (size_t i = 0; i < game.rounds.size(); i++) {
+
+        if (sameCard(game.rounds[i].north, card)) {
+            roundIndex = static_cast<int>(i);
+            player = Player::NORTH;
+            return true;
+        }
+
+        if (sameCard(game.rounds[i].south, card)) {
+            roundIndex = static_cast<int>(i);
+            player = Player::SOUTH;
             return true;
         }
     }
@@ -441,4 +497,296 @@ int ErrorResolver::resolveBriscola(Game& game) {
     GameEngine::computeGame(game);
 
     return 1;
+}
+
+
+int ErrorResolver::resolveLeaderIssues(Game& game) {
+
+    int corrections = 0;
+
+
+    while (true) {
+
+        ValidationResult validation = Validator::validate(game);
+
+        // Card consistency must already be solved before this block
+        if (!validation.cardIssues.empty()) {
+            break;
+        }
+
+        int currentLeaderIssues = static_cast<int>(validation.leaderIssues.size());
+
+        if (currentLeaderIssues == 0) {
+            break;
+        }
+
+
+        Game bestGame = game;
+
+        int bestLeaderIssues = currentLeaderIssues;
+        double bestConfidenceLoss = std::numeric_limits<double>::max();
+        int bestCorrectionCount = 0;
+
+        bool correctionFound = false;
+        bool ambiguous = false;
+
+
+        // Check every winner-leader inconsistency
+        for (const auto& issue : validation.leaderIssues) {
+
+            int previousRoundIndex = issue.previousRound - 1;
+            int nextRoundIndex = issue.nextRound - 1;
+
+
+            /*
+             * CASE 1:
+             * The leader of the next round may be wrong.
+             */
+            const RoundPrediction& nextPrediction = game.prediction.rounds[nextRoundIndex];
+
+            Player currentLeader = game.rounds[nextRoundIndex].leader;
+            double currentLeaderConfidence = getLeaderConfidence(game, nextRoundIndex, currentLeader);
+
+
+            for (const auto& candidate : nextPrediction.leaderDetected) {
+
+                if (candidate.player == currentLeader) {
+                    continue;
+                }
+
+
+                Game testGame = game;
+
+                testGame.rounds[nextRoundIndex].leader = candidate.player;
+
+                GameEngine::computeGame(testGame);
+
+                ValidationResult testValidation = Validator::validate(testGame);
+
+                int leaderIssues = static_cast<int>(testValidation.leaderIssues.size());
+                double confidenceLoss = currentLeaderConfidence - candidate.confidence;
+
+
+                if (leaderIssues < bestLeaderIssues ||
+                    (leaderIssues == bestLeaderIssues &&
+                     leaderIssues < currentLeaderIssues &&
+                     confidenceLoss < bestConfidenceLoss - 1e-9)) {
+
+                    bestLeaderIssues = leaderIssues;
+                    bestConfidenceLoss = confidenceLoss;
+                    bestGame = testGame;
+                    bestCorrectionCount = 1;
+
+                    correctionFound = true;
+                    ambiguous = false;
+                }
+                else if (leaderIssues == bestLeaderIssues &&
+                         leaderIssues < currentLeaderIssues &&
+                         std::abs(confidenceLoss - bestConfidenceLoss) <= 1e-9) {
+
+                    ambiguous = true;
+                }
+            }
+
+
+            /*
+             * CASE 2:
+             * The winner of the previous round may be wrong because
+             * one of its two cards was misdetected.
+             *
+             * Since all 40 cards are already present, replacing only one
+             * card would create a duplicate and a missing card. Therefore
+             * the candidate card is swapped with its current position.
+             */
+
+            const RoundPrediction& previousPrediction = game.prediction.rounds[previousRoundIndex];
+
+
+            // Try NORTH card alternatives
+            for (const auto& candidate : previousPrediction.northDetected) {
+
+                Card currentCard = game.rounds[previousRoundIndex].north;
+
+                if (sameCard(candidate.card, currentCard)) {
+                    continue;
+                }
+
+
+                int otherRoundIndex;
+                Player otherPlayer;
+
+                if (!findCardPosition(game, candidate.card, otherRoundIndex, otherPlayer)) {
+                    continue;
+                }
+
+
+                // Do not swap with the same position
+                if (otherRoundIndex == previousRoundIndex && otherPlayer == Player::NORTH) {
+                    continue;
+                }
+
+
+                Game testGame = game;
+
+                Card otherCard;
+
+                if (otherPlayer == Player::NORTH) {
+                    otherCard = testGame.rounds[otherRoundIndex].north;
+                    testGame.rounds[otherRoundIndex].north = currentCard;
+                }
+                else {
+                    otherCard = testGame.rounds[otherRoundIndex].south;
+                    testGame.rounds[otherRoundIndex].south = currentCard;
+                }
+
+                testGame.rounds[previousRoundIndex].north = otherCard;
+
+
+                GameEngine::computeGame(testGame);
+
+                ValidationResult testValidation = Validator::validate(testGame);
+
+
+                // The swap must preserve the deck consistency
+                if (!testValidation.cardIssues.empty()) {
+                    continue;
+                }
+
+
+                int leaderIssues = static_cast<int>(testValidation.leaderIssues.size());
+
+
+                double beforeConfidence =
+                    getCardConfidence(game, previousRoundIndex, Player::NORTH, currentCard) +
+                    getCardConfidence(game, otherRoundIndex, otherPlayer, otherCard);
+
+                double afterConfidence =
+                    getCardConfidence(game, previousRoundIndex, Player::NORTH, otherCard) +
+                    getCardConfidence(game, otherRoundIndex, otherPlayer, currentCard);
+
+                double confidenceLoss = beforeConfidence - afterConfidence;
+
+
+                if (leaderIssues < bestLeaderIssues ||
+                    (leaderIssues == bestLeaderIssues &&
+                     leaderIssues < currentLeaderIssues &&
+                     confidenceLoss < bestConfidenceLoss - 1e-9)) {
+
+                    bestLeaderIssues = leaderIssues;
+                    bestConfidenceLoss = confidenceLoss;
+                    bestGame = testGame;
+                    bestCorrectionCount = 2;
+
+                    correctionFound = true;
+                    ambiguous = false;
+                }
+                else if (leaderIssues == bestLeaderIssues &&
+                         leaderIssues < currentLeaderIssues &&
+                         std::abs(confidenceLoss - bestConfidenceLoss) <= 1e-9) {
+
+                    ambiguous = true;
+                }
+            }
+
+
+            // Try SOUTH card alternatives
+            for (const auto& candidate : previousPrediction.southDetected) {
+
+                Card currentCard = game.rounds[previousRoundIndex].south;
+
+                if (sameCard(candidate.card, currentCard)) {
+                    continue;
+                }
+
+
+                int otherRoundIndex;
+                Player otherPlayer;
+
+                if (!findCardPosition(game, candidate.card, otherRoundIndex, otherPlayer)) {
+                    continue;
+                }
+
+
+                if (otherRoundIndex == previousRoundIndex && otherPlayer == Player::SOUTH) {
+                    continue;
+                }
+
+
+                Game testGame = game;
+
+                Card otherCard;
+
+                if (otherPlayer == Player::NORTH) {
+                    otherCard = testGame.rounds[otherRoundIndex].north;
+                    testGame.rounds[otherRoundIndex].north = currentCard;
+                }
+                else {
+                    otherCard = testGame.rounds[otherRoundIndex].south;
+                    testGame.rounds[otherRoundIndex].south = currentCard;
+                }
+
+                testGame.rounds[previousRoundIndex].south = otherCard;
+
+
+                GameEngine::computeGame(testGame);
+
+                ValidationResult testValidation = Validator::validate(testGame);
+
+
+                if (!testValidation.cardIssues.empty()) {
+                    continue;
+                }
+
+
+                int leaderIssues = static_cast<int>(testValidation.leaderIssues.size());
+
+
+                double beforeConfidence =
+                    getCardConfidence(game, previousRoundIndex, Player::SOUTH, currentCard) +
+                    getCardConfidence(game, otherRoundIndex, otherPlayer, otherCard);
+
+                double afterConfidence =
+                    getCardConfidence(game, previousRoundIndex, Player::SOUTH, otherCard) +
+                    getCardConfidence(game, otherRoundIndex, otherPlayer, currentCard);
+
+                double confidenceLoss = beforeConfidence - afterConfidence;
+
+
+                if (leaderIssues < bestLeaderIssues ||
+                    (leaderIssues == bestLeaderIssues &&
+                     leaderIssues < currentLeaderIssues &&
+                     confidenceLoss < bestConfidenceLoss - 1e-9)) {
+
+                    bestLeaderIssues = leaderIssues;
+                    bestConfidenceLoss = confidenceLoss;
+                    bestGame = testGame;
+                    bestCorrectionCount = 2;
+
+                    correctionFound = true;
+                    ambiguous = false;
+                }
+                else if (leaderIssues == bestLeaderIssues &&
+                         leaderIssues < currentLeaderIssues &&
+                         std::abs(confidenceLoss - bestConfidenceLoss) <= 1e-9) {
+
+                    ambiguous = true;
+                }
+            }
+        }
+
+
+        // No safe improvement was found
+        if (!correctionFound || ambiguous) {
+            break;
+        }
+
+
+        game = bestGame;
+        corrections += bestCorrectionCount;
+    }
+
+
+    GameEngine::computeGame(game);
+
+    return corrections;
 }

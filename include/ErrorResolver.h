@@ -57,4 +57,34 @@ public:
      */
     static int resolveBriscola(Game& game);
 
+
+    /**
+     * 3. WINNER / LEADER CONSISTENCY
+     * Corrects inconsistencies between the winner of a round and the leader of
+     * the following round.
+     *
+     * For every leader issue, the resolver considers two possible causes:
+     * an incorrect leader prediction in the next round, or an incorrect card
+     * prediction in the previous round that caused the wrong winner.
+     *
+     * Leader alternatives are tested by recomputing the game and checking how many
+     * winner-leader inconsistencies remain.
+     *
+     * Card alternatives are also tested, but since the deck is already complete
+     * after the first correction block, cards are swapped with their current
+     * position instead of simply being replaced. This preserves the 40-card deck
+     * consistency and avoids creating new duplicated or missing cards.
+     *
+     * Among all possible corrections, the one producing the fewest leader issues
+     * is selected. Recognition confidence is used as a tie-breaker when multiple
+     * corrections produce the same result.
+     *
+     * The process is repeated until all leader issues are solved or no safe
+     * improvement can be found.
+     *
+     * Winners are never modified directly because they are computed from the cards,
+     * leader and briscola.
+     */
+    static int resolveLeaderIssues(Game& game);
+
 };
