@@ -11,6 +11,7 @@ find_package(OpenCV REQUIRED)
 include_directories(
     ${OpenCV_INCLUDE_DIRS}
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/model
 )
 
 add_executable(
@@ -19,6 +20,13 @@ add_executable(
     src/detector.cpp
     src/recognizer.cpp
     src/analyzer.cpp
+    src/JsonReader.cpp
+    src/GameEngine.cpp
+    src/BriscolaRules.cpp
+    src/Validator.cpp
+    src/ErrorResolver.cpp
+    src/OutputWriter.cpp
+    src/MetricsEvaluator.cpp
 )
 
 target_link_libraries(
