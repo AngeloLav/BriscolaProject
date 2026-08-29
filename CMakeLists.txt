@@ -14,6 +14,7 @@ add_executable(
     src/main.cpp
     src/detector.cpp
     src/recognizer.cpp
+    src/analyzer.cpp
 )
 
 target_link_libraries(
