@@ -28,9 +28,7 @@ cmake --build build
 
 ## Usage
 
-Run the application by providing the folder of a game. Every supported video
-inside that folder is processed in filename order; one video corresponds to
-one round. The ground-truth CSV can be inside the game folder or next to it with the same name as the folder:
+Run the application by providing the folder of a game. Video inside that folder is processed in filename order; one video corresponds to one round. The ground-truth CSV have to be inside the game folder:
 
 ```bash
 ./build/briscola <game_folder>
@@ -46,11 +44,10 @@ Expected layout:
 
 ```text
 data/
-├── game1/
-│   ├── round01.mp4
-│   ├── round02.mp4
-│   └── prediction.json       # optional temporary test input
-└── game1.csv
+ ── game1/
+    ├── round01.mp4
+    ├── round02.mp4
+    └── game1.csv
 ```
 
 Press `ESC` to stop execution.

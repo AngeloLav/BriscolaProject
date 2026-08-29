@@ -94,6 +94,12 @@ int main(int argc, char** argv) {
         false
     );
 
+    GamePrediction prediction;
+
+    std::vector<Card> allBriscolaDetections;
+
+    int roundNumber = 1;
+
     for (const auto& videoPath : videoFiles) {
         cv::VideoCapture video(videoPath);
         if (!video.isOpened()) {
@@ -179,17 +185,20 @@ int main(int argc, char** argv) {
 
         // --- COSTRUZIONE DEI DATI PER IL TUO COMPAGNO ---
         RoundPrediction currentRoundPred;
-        currentRoundPred.round = 1; // Numero del round/video corrente
+        currentRoundPred.round = roundNumber; // Numero del round/video corrente
 
         // Calcola le carte candidate con le relative confidence per North e South
         currentRoundPred.northDetected = getRankedCardsWithConfidence(northDetections);
         currentRoundPred.southDetected = getRankedCardsWithConfidence(southDetections);
+
 
         // Esempio per il Leader con confidence (puoi integrarla in base alla logica di rilevamento leader)
         PlayerDetected leaderPred;
         leaderPred.player = Player::NORTH;
         leaderPred.confidence = 1.0; 
         currentRoundPred.leaderDetected.push_back(leaderPred);
+
+        prediction.rounds.push_back(currentRoundPred);
 
         // Anche per la Briscola puoi ottenere le candidate con confidence
         std::vector<CardDetected> briscolaCandidates = getRankedCardsWithConfidence(briscolaDetections);
@@ -243,14 +252,20 @@ int main(int argc, char** argv) {
         std::cout << "Winner:     " << (winner == Player::NORTH ? "NORTH" : "SOUTH") << std::endl;
         std::cout << "Points Won: " << roundPoints << " pts" << std::endl;
         std::cout << "====================================================\n" << std::endl;
+
+
+        roundNumber++;
     }
 
 
 
+    prediction.briscolaDetected =
+    getRankedCardsWithConfidence(
+        allBriscolaDetections
+    );
 
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
-    GamePrediction prediction =
-        JsonReader::readGamePrediction(jsonPath);
+    // GamePrediction prediction = JsonReader::readGamePrediction(jsonPath);
 
     /*
     // Known briscola: this test is only for UNKNOWN played cards
