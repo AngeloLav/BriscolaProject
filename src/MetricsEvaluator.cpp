@@ -45,19 +45,19 @@ static CardType parseCardType(const std::string& type) {
     std::string value = trim(type);
 
     if (value == "coins") {
-        return CardType::DENARI;
+        return CardType::COINS;
     }
 
     if (value == "clubs") {
-        return CardType::BASTONI;
+        return CardType::CLUBS;
     }
 
     if (value == "cups") {
-        return CardType::COPPE;
+        return CardType::CUPS;
     }
 
     if (value == "spades") {
-        return CardType::SPADE;
+        return CardType::SPADES;
     }
 
     throw std::runtime_error("Invalid card type: " + value);

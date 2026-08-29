@@ -9,16 +9,16 @@ static std::string cardTypeToString(CardType type) {
 
     switch (type) {
 
-        case CardType::DENARI:
+        case CardType::COINS:
             return "coins";
 
-        case CardType::BASTONI:
+        case CardType::CLUBS:
             return "clubs";
 
-        case CardType::COPPE:
+        case CardType::CUPS:
             return "cups";
 
-        case CardType::SPADE:
+        case CardType::SPADES:
             return "spades";
     }
 

@@ -11,16 +11,16 @@ using json = nlohmann::json;
 static CardType parseCardType(const std::string& type) {
 
     if (type == "DENARI")
-        return CardType::DENARI;
+        return CardType::COINS;
 
     if (type == "BASTONI")
-        return CardType::BASTONI;
+        return CardType::CLUBS;
 
     if (type == "COPPE")
-        return CardType::COPPE;
+        return CardType::CUPS;
 
     if (type == "SPADE")
-        return CardType::SPADE;
+        return CardType::SPADES;
 
     throw std::runtime_error("Invalid card type: " + type);
 }
