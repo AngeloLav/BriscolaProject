@@ -7,10 +7,10 @@
 
 
 enum class CardType {
-    DENARI,
-    BASTONI,
-    COPPE,
-    SPADE
+    COINS,
+    CLUBS,
+    CUPS,
+    SPADES
 };
 
 // players identified by their position

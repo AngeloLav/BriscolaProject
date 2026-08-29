@@ -13,6 +13,7 @@ add_executable(
     briscola
     src/main.cpp
     src/detector.cpp
+    src/recognizer.cpp
 )
 
 target_link_libraries(

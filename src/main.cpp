@@ -1,4 +1,5 @@
 #include "detector.hpp"
+#include "recognizer.hpp"
 
 // Standard include
 #include <iostream>
@@ -32,6 +33,9 @@ int main(int argc, char** argv) {
 
     // Loading the model
     Detector detector("model/best.onnx");
+    CardRecognizer recognizer("Briscola_Trentine");
+    cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
+    cv::resizeWindow("Briscola video", 1280, 720);
 
     cv::Mat frame;
     int frameIndex {0};
@@ -64,6 +68,14 @@ int main(int argc, char** argv) {
         // Once this matching work, the last part for the last who will work here will be organizing
         // and ordering the detections, and counting points as it is described in the assignment
 
+        for(const auto& detection : detections) {
+            cv::Rect safebox=detection.box & cv::Rect(0, 0, frame.cols, frame.rows); // This is to avoid the case where the BB is partially outside the frame
+            if(safebox.width<=0||safebox.height<=0) continue; // This is to avoid the case where the BB is completely outside the frame
+            cv::Mat croppedcard=frame(safebox);
+            Card recognizedCard=recognizer.identifyCard(croppedcard);
+            std::cout <<"Card found: "<< detection.classId
+                      << ", value= " << recognizedCard.value << std::endl;
+        }
 
         // Used for development, maybe it will be commented in the final project
         detector.drawDetections(frame, detections);

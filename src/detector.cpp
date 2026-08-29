@@ -19,12 +19,12 @@ Detector::Detector(const std::string& modelPath) {
 
 std::vector<Detection> Detector::detect(const cv::Mat& frame) {
     cv::Mat blob = cv::dnn::blobFromImage(
-        frame,
-        1.0 / 255.0,        // This is normalization of pixel intensity values between 0-1, since yolo works with this format          
-        cv::Size(640, 640), // Size required by Yolo
-        cv::Scalar(),       // Subtracts mean values from channels; here its initialized all to (0, 0, 0, 0)
-        true,               // BGR to RGB                 
-        false               // Cropping
+            frame,
+            1.0 / 255.0,        // This is normalization of pixel intensity values between 0-1, since yolo works with this format          
+            cv::Size(640, 640), // Size required by Yolo
+            cv::Scalar(),       // Subtracts mean values from channels; here its initialized all to (0, 0, 0, 0)
+            true,               // BGR to RGB                 
+            false               // Cropping
         );
 
         // NOTE: i trained the model on a dataset whose images where all resized by stretching them to 640x640, 
