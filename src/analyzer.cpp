@@ -4,6 +4,7 @@
 #include <algorithm>
 
 //points that are assigned to each card
+/*
 int getCardPoints(int value){
     switch(value){
         case 1:return 11; //card ace
@@ -30,6 +31,8 @@ int getCardRank(int value){
         default:return 0;
     }
 }
+*/
+
 std::string suitToString(CardType type) {
     switch (type) {
         case CardType::COINS: return "COINS";
@@ -59,6 +62,7 @@ Card getMostFreqCard(const std::vector<Card>& cards){
     return {static_cast<CardType>(bestKey.first), bestKey.second};
 }
 //we are determining if the winner is the south part or the north part
+/*
 Player detWinner(Card northCard, Card southCard, Card briscolaCard, Player leader) {
     bool northIsBriscola=(northCard.type==briscolaCard.type);
     bool southIsBriscola=(southCard.type==briscolaCard.type);
@@ -75,6 +79,7 @@ Player detWinner(Card northCard, Card southCard, Card briscolaCard, Player leade
     }
     return leader;
 }
+*/
 //this function returns a vector of CardDetected which contains the cards detected and their confidence
 std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<Card>& cards) {
     std::vector<CardDetected> result;
