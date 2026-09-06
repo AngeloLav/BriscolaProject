@@ -173,7 +173,6 @@ int main(int argc, char** argv) {
     
     return 0;
 
-    //all this part was just for testing the winner calculation, it is not used in the final version of the code
     /*
     std::cout << "\n=================== ROUND RESULT ===================" << std::endl;
     std::cout << "North Card: " << finalNorthCard.value << " of " << suitToString(finalNorthCard.type) << " (" << getCardPoints(finalNorthCard.value) << " pts)" << std::endl;
