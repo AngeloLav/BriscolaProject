@@ -28,16 +28,26 @@ cmake --build build
 
 ## Usage
 
-Run the application by providing a video file:
+Run the application by providing the folder of a game. Video inside that folder is processed in filename order; one video corresponds to one round. The ground-truth CSV have to be inside the game folder:
 
 ```bash
-./build/briscola <video_path>
+./build/briscola <game_folder>
 ```
 
 Example:
 
 ```bash
-./build/briscola videos/test.mp4
+./build/briscola data/game1
+```
+
+Expected layout:
+
+```text
+data/
+ ── game1/
+    ├── round01.mp4
+    ├── round02.mp4
+    └── game1.csv
 ```
 
 Press `ESC` to stop execution.

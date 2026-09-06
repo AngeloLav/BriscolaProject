@@ -1,0 +1,1208 @@
+{
+  "gameId": "synthetic_test_game_with_errors",
+  "rounds": [
+    {
+      "round": 1,
+      "northDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 2
+          },
+          "confidence": 0.93
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 2
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 3
+          },
+          "confidence": 0.01
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 1
+          },
+          "confidence": 0.89
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 1
+          },
+          "confidence": 0.1
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 2
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.93
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.07
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "northDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 5
+          },
+          "confidence": 0.9
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 5
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 6
+          },
+          "confidence": 0.04
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 10
+          },
+          "confidence": 0.9
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 10
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 1
+          },
+          "confidence": 0.02
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.95
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.05
+        }
+      ]
+    },
+    {
+      "round": 3,
+      "northDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 9
+          },
+          "confidence": 0.93
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 9
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 10
+          },
+          "confidence": 0.01
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 3
+          },
+          "confidence": 0.91
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 3
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 4
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.98
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.02
+        }
+      ]
+    },
+    {
+      "round": 4,
+      "northDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 2
+          },
+          "confidence": 0.54
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 2
+          },
+          "confidence": 0.4
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 2
+          },
+          "confidence": 0.06
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 5
+          },
+          "confidence": 0.88
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 5
+          },
+          "confidence": 0.1
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 6
+          },
+          "confidence": 0.02
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.96
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.04
+        }
+      ]
+    },
+    {
+      "round": 5,
+      "northDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 7
+          },
+          "confidence": 0.9
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 7
+          },
+          "confidence": 0.07
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 8
+          },
+          "confidence": 0.03
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 10
+          },
+          "confidence": 0.92
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 10
+          },
+          "confidence": 0.07
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 1
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.94
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.06
+        }
+      ]
+    },
+    {
+      "round": 6,
+      "northDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 7
+          },
+          "confidence": 0.87
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 7
+          },
+          "confidence": 0.07
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 8
+          },
+          "confidence": 0.06
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 8
+          },
+          "confidence": 0.91
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 8
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 9
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.94
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.06
+        }
+      ]
+    },
+    {
+      "round": 7,
+      "northDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 8
+          },
+          "confidence": 0.86
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 8
+          },
+          "confidence": 0.03
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 9
+          },
+          "confidence": 0.11
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 10
+          },
+          "confidence": 0.83
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 10
+          },
+          "confidence": 0.09
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 1
+          },
+          "confidence": 0.09
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.95
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.05
+        }
+      ]
+    },
+    {
+      "round": 8,
+      "northDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 4
+          },
+          "confidence": 0.9
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 4
+          },
+          "confidence": 0.09
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 5
+          },
+          "confidence": 0.01
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 7
+          },
+          "confidence": 0.86
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 7
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 8
+          },
+          "confidence": 0.08
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.92
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.08
+        }
+      ]
+    },
+    {
+      "round": 9,
+      "northDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 1
+          },
+          "confidence": 0.86
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 1
+          },
+          "confidence": 0.09
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 2
+          },
+          "confidence": 0.05
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 10
+          },
+          "confidence": 0.54
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 10
+          },
+          "confidence": 0.4
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 9
+          },
+          "confidence": 0.06
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.92
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.08
+        }
+      ]
+    },
+    {
+      "round": 10,
+      "northDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 5
+          },
+          "confidence": 0.87
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 5
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 6
+          },
+          "confidence": 0.07
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 4
+          },
+          "confidence": 0.82
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 4
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 5
+          },
+          "confidence": 0.1
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.96
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.04
+        }
+      ]
+    },
+    {
+      "round": 11,
+      "northDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 1
+          },
+          "confidence": 0.91
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 1
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 2
+          },
+          "confidence": 0.01
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 7
+          },
+          "confidence": 0.83
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 7
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 8
+          },
+          "confidence": 0.09
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.97
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.03
+        }
+      ]
+    },
+    {
+      "round": 12,
+      "northDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 6
+          },
+          "confidence": 0.9
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 6
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 7
+          },
+          "confidence": 0.02
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 8
+          },
+          "confidence": 0.82
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 8
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 9
+          },
+          "confidence": 0.12
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.96
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.04
+        }
+      ]
+    },
+    {
+      "round": 13,
+      "northDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 9
+          },
+          "confidence": 0.89
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 9
+          },
+          "confidence": 0.09
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 10
+          },
+          "confidence": 0.02
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 2
+          },
+          "confidence": 0.9
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 2
+          },
+          "confidence": 0.09
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 3
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.56
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.44
+        }
+      ]
+    },
+    {
+      "round": 14,
+      "northDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 6
+          },
+          "confidence": 0.93
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 6
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 7
+          },
+          "confidence": 0.01
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 8
+          },
+          "confidence": 0.93
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 8
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 9
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.94
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.06
+        }
+      ]
+    },
+    {
+      "round": 15,
+      "northDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 1
+          },
+          "confidence": 0.84
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 1
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 2
+          },
+          "confidence": 0.08
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 3
+          },
+          "confidence": 0.87
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 3
+          },
+          "confidence": 0.05
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 4
+          },
+          "confidence": 0.08
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.97
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.03
+        }
+      ]
+    },
+    {
+      "round": 16,
+      "northDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 5
+          },
+          "confidence": 0.89
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 5
+          },
+          "confidence": 0.07
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 6
+          },
+          "confidence": 0.04
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 3
+          },
+          "confidence": 0.91
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 3
+          },
+          "confidence": 0.03
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 4
+          },
+          "confidence": 0.06
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.94
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.06
+        }
+      ]
+    },
+    {
+      "round": 17,
+      "northDetected": [
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 2
+          },
+          "confidence": 0.91
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 2
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 3
+          },
+          "confidence": 0.01
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 9
+          },
+          "confidence": 0.86
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 9
+          },
+          "confidence": 0.03
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 10
+          },
+          "confidence": 0.1
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.96
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.04
+        }
+      ]
+    },
+    {
+      "round": 18,
+      "northDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 4
+          },
+          "confidence": 0.87
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 4
+          },
+          "confidence": 0.06
+        },
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 5
+          },
+          "confidence": 0.06
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "COPPE",
+            "value": 6
+          },
+          "confidence": 0.54
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 6
+          },
+          "confidence": 0.4
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 5
+          },
+          "confidence": 0.06
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.95
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.05
+        }
+      ]
+    },
+    {
+      "round": 19,
+      "northDetected": [
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 9
+          },
+          "confidence": 0.84
+        },
+        {
+          "card": {
+            "type": "BASTONI",
+            "value": 9
+          },
+          "confidence": 0.04
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 10
+          },
+          "confidence": 0.12
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 4
+          },
+          "confidence": 0.91
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 4
+          },
+          "confidence": 0.08
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 5
+          },
+          "confidence": 0.01
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "NORTH",
+          "confidence": 0.96
+        },
+        {
+          "player": "SOUTH",
+          "confidence": 0.04
+        }
+      ]
+    },
+    {
+      "round": 20,
+      "northDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 3
+          },
+          "confidence": 0.88
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 3
+          },
+          "confidence": 0.09
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 4
+          },
+          "confidence": 0.04
+        }
+      ],
+      "southDetected": [
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 6
+          },
+          "confidence": 0.83
+        },
+        {
+          "card": {
+            "type": "SPADE",
+            "value": 6
+          },
+          "confidence": 0.04
+        },
+        {
+          "card": {
+            "type": "DENARI",
+            "value": 7
+          },
+          "confidence": 0.13
+        }
+      ],
+      "leaderDetected": [
+        {
+          "player": "SOUTH",
+          "confidence": 0.91
+        },
+        {
+          "player": "NORTH",
+          "confidence": 0.09
+        }
+      ]
+    }
+  ],
+  "briscolaDetected": [
+    {
+      "card": {
+        "type": "COPPE",
+        "value": 6
+      },
+      "confidence": 0.51
+    },
+    {
+      "card": {
+        "type": "DENARI",
+        "value": 6
+      },
+      "confidence": 0.47
+    },
+    {
+      "card": {
+        "type": "DENARI",
+        "value": 5
+      },
+      "confidence": 0.02
+    }
+  ]
+}
