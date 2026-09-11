@@ -1,10 +1,6 @@
-
-
 #pragma once
-
 #include <vector>
 #include <string>
-
 
 enum class CardType {
     COINS,
