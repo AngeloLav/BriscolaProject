@@ -3,6 +3,8 @@
 
 #include <limits>
 #include <cmath>
+#include <iostream>
+#include <fstream>
 
 
 static bool sameCard(const Card& first, const Card& second) {
@@ -96,8 +98,23 @@ int ErrorResolver::resolveCardIssues(Game& game) {
         Card bestCard;
 
 
+
         // Look at every duplicated card
         for (const auto& issue : validation.cardIssues) {
+
+            
+            std::cout << "Issue type="
+                << static_cast<int>(issue.type)
+                << " card="
+                << issue.card.value
+                << " suit="
+                << static_cast<int>(issue.card.type)
+                << " positions="
+                << issue.positions.size()
+                << std::endl;
+
+
+
 
             if (issue.type != CardIssueType::DUPLICATE_CARD) {
                 continue;

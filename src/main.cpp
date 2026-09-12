@@ -4,7 +4,10 @@
 #include "analyzer.hpp"
 
 // Standard include
+#include <algorithm>
+#include <filesystem>
 #include <iostream>
+#include <limits>
 #include <string>
 #include <vector>
 
@@ -23,6 +26,57 @@
 #include "ErrorResolver.h"
 #include "OutputWriter.h"
 #include "MetricsEvaluator.h"
+
+namespace {
+
+// Keep these ids in sync with Detector::drawDetections().
+constexpr int BRISCOLA_CLASS_ID = 0;
+constexpr int PLAYED_CARD_CLASS_ID = 1;
+
+// Returns the round number from the video path
+int getRoundNumberFromVideoPath(const cv::String& videoPath) {
+    const std::string stem = std::filesystem::path(videoPath).stem().string();
+    const std::string marker = "round";
+    const std::size_t markerPosition = stem.rfind(marker);
+
+    if (markerPosition == std::string::npos) {
+        return std::numeric_limits<int>::max();
+    }
+
+    try {
+        return std::stoi(stem.substr(markerPosition + marker.size()));
+    }
+    catch (const std::exception&) {
+        return std::numeric_limits<int>::max();
+    }
+}
+
+void printCardCandidates(
+    const std::string& label,
+    const std::vector<CardDetected>& candidates
+) {
+    std::cout << " " << label << " candidates:" << std::endl;
+
+    if (candidates.empty()) {
+        std::cout << "  <empty>" << std::endl;
+        return;
+    }
+
+    for (const auto& candidate : candidates) {
+        std::cout << "  - "
+                  << candidate.card.value << " of "
+                  << suitToString(candidate.card.type)
+                  << " | confidence=" << candidate.confidence
+                  << std::endl;
+    }
+}
+
+bool isValidRecognizedCard(const Card& card) {
+    const int type = static_cast<int>(card.type);
+    return card.value >= 1 && card.value <= 10 && type >= 0 && type <= 3;
+}
+
+} // namespace
 
 
 int main(int argc, char** argv) {
@@ -93,6 +147,28 @@ int main(int argc, char** argv) {
         videoFiles,
         false
     );
+
+        std::sort(
+        videoFiles.begin(),
+        videoFiles.end(),
+        [](const cv::String& lhs, const cv::String& rhs) {
+            const int lhsRound = getRoundNumberFromVideoPath(lhs);
+            const int rhsRound = getRoundNumberFromVideoPath(rhs);
+
+            if (lhsRound != rhsRound) {
+                return lhsRound < rhsRound;
+            }
+
+            return lhs < rhs;
+        }
+    );
+
+    std::cout << "Video files found: " << videoFiles.size() << std::endl;
+    if (videoFiles.size() != 20) {
+        std::cerr << "Warning: expected 20 round videos, found "
+                  << videoFiles.size() << std::endl;
+    }
+
     
     Detector detector("model/best.onnx");
     CardRecognizer recognizer("Briscola_Trentine");
@@ -102,9 +178,19 @@ int main(int argc, char** argv) {
     GamePrediction prediction;
     std::vector<Card> allBriscolaDetections;
 
-    int roundNumber = 1;
+    int fallbackRoundNumber = 1;
 
     for (const auto& videoPath : videoFiles) {
+        int roundNumber = getRoundNumberFromVideoPath(videoPath);
+        if (roundNumber == std::numeric_limits<int>::max()) {
+            roundNumber = fallbackRoundNumber;
+        }
+        fallbackRoundNumber++;
+
+        std::cout << "\nProcessing round " << roundNumber
+                  << ": " << std::filesystem::path(videoPath).filename().string()
+                  << std::endl;
+
         cv::VideoCapture video(videoPath);
         if (!video.isOpened()) {
             std::cout << "Unable to open video: " << videoPath << std::endl;
@@ -119,20 +205,44 @@ int main(int argc, char** argv) {
         */
 
         cv::Mat frame;
-        int frameIndex {0};
 
         std::vector<Card> northDetections;
         std::vector<Card> southDetections;
         std::vector<Card> briscolaDetections;
 
+        int sampledFrames = 0;
+        int detectorDetections = 0;
+        int invalidBoxes = 0;
+        int recognitionFailures = 0;
+        int briscolaClassDetections = 0;
+        int playedCardClassDetections = 0;
+        int unknownClassDetections = 0;
+
         //who plays at first?
         int firstNorthFrame = -1;
         int firstSouthFrame = -1;
 
+        // Limita i frame presi, non so se poi volete calibrare meglio o togliere
+        int totalFrames = static_cast<int>(
+            video.get(cv::CAP_PROP_FRAME_COUNT)
+        );
+        int frameStep = std::max(1, totalFrames / 2);
+        int frameIndex = 0;
+
+
         while (video.read(frame)) {
+
+            // Skip frames
+            if (frameIndex % frameStep != 0) {
+                frameIndex++;
+                continue;
+            }
+
             std::cout << "Frame: " << frameIndex
                       << " | Size:\nx = " << frame.cols
                       << "\ny = " << frame.rows << std::endl;
+
+            sampledFrames++;
 
             std::vector<Detection> detections = detector.detect(frame);
             
@@ -158,22 +268,46 @@ int main(int argc, char** argv) {
             // and ordering the detections, and counting points as it is described in the assignment
 
             for(const auto& detection : detections) {
+                detectorDetections++;
+
                 cv::Rect safebox=detection.box & cv::Rect(0, 0, frame.cols, frame.rows); // This is to avoid the case where the BB is partially outside the frame
                 if(safebox.width<=0||safebox.height<=0) continue; // This is to avoid the case where the BB is completely outside the frame
                 cv::Mat croppedcard=frame(safebox);
                 Card recognizedCard=recognizer.identifyCard(croppedcard);
-                /*
-                std::cout <<"Card found: "<< detection.classId
-                        << ", value= " << recognizedCard.value << std::endl;
-                */
-                if(recognizedCard.value==0) continue; 
-                bool isBriscolaClass=(detection.classId==1);
-                int centerY=safebox.y+safebox.height/2;
-                //int centerX=safebox.x+safebox.width/2;
-                if(isBriscolaClass){
+
+                std::cout << "[CV] frame=" << frameIndex
+                          << " | class=" << detection.classId
+                          << " | recognized=" << recognizedCard.value
+                          << " of " << suitToString(recognizedCard.type);
+
+                if (!isValidRecognizedCard(recognizedCard)) {
+                    recognitionFailures++;
+                    std::cout << " | rejected: invalid Card" << std::endl;
+                    continue;
+                }
+
+                std::cout << std::endl;
+
+                // class 0 is Briscola-Cards and class 1 is Played-Card;
+                // this must match Detector::drawDetections().
+                if (detection.classId == BRISCOLA_CLASS_ID) {
+                    briscolaClassDetections++;
                     briscolaDetections.push_back(recognizedCard);
                     allBriscolaDetections.push_back(recognizedCard);
-                }else if(centerY<frame.rows/2){
+                    continue;
+                }
+
+                if (detection.classId != PLAYED_CARD_CLASS_ID) {
+                    unknownClassDetections++;
+                    std::cout << "[CV] rejected: unknown detector class "
+                              << detection.classId << std::endl;
+                    continue;
+                }
+
+                playedCardClassDetections++;
+                int centerY=safebox.y+safebox.height/2;
+                //int centerX=safebox.x+safebox.width/2;
+                if(centerY<frame.rows/2){
                     northDetections.push_back(recognizedCard);
                     if(firstNorthFrame==-1) firstNorthFrame=frameIndex;
                 }else{
@@ -187,7 +321,6 @@ int main(int argc, char** argv) {
 
             // Showing each frame
             cv::imshow("Briscola video", frame);
-            
             int key = cv::waitKey(30);
 
             // If user presses ESC the video stops
@@ -204,6 +337,25 @@ int main(int argc, char** argv) {
 
         currentRoundPred.northDetected = getRankedCardsWithConfidence(northDetections);
         currentRoundPred.southDetected = getRankedCardsWithConfidence(southDetections);
+
+        std::cout << "[ROUND " << roundNumber << "] "
+                  << "sampled frames=" << sampledFrames
+                  << " | detector detections=" << detectorDetections
+                  << " | invalid ROI=" << invalidBoxes
+                  << " | recognition failures=" << recognitionFailures
+                  << " | briscola class=" << briscolaClassDetections
+                  << " | played-card class=" << playedCardClassDetections
+                  << " | unknown class=" << unknownClassDetections
+                  << std::endl;
+        std::cout << "[ROUND " << roundNumber << "] raw vectors before ranking: "
+                  << "north=" << northDetections.size()
+                  << ", south=" << southDetections.size()
+                  << ", briscola=" << briscolaDetections.size()
+                  << std::endl;
+        std::cout << "[ROUND " << roundNumber << "] candidates after ranking: "
+                  << "north=" << currentRoundPred.northDetected.size()
+                  << ", south=" << currentRoundPred.southDetected.size()
+                  << std::endl;
 
         PlayerDetected leaderPred;
         if(firstNorthFrame != -1 && (firstSouthFrame == -1 || firstNorthFrame < firstSouthFrame)) {
@@ -270,7 +422,6 @@ int main(int argc, char** argv) {
                   << " (Frame N: " << firstNorthFrame << ", Frame S: " << firstSouthFrame << ")" << std::endl;
         std::cout << "======================================================\n" << std::endl;
 
-        roundNumber++;
     }
 
 
@@ -279,6 +430,20 @@ int main(int argc, char** argv) {
     getRankedCardsWithConfidence(
         allBriscolaDetections
     );
+
+    std::cout << "\n================ GamePrediction audit ================" << std::endl;
+    std::cout << "Rounds: " << prediction.rounds.size() << std::endl;
+
+    for (const auto& round : prediction.rounds) {
+        std::cout << "Round " << round.round << std::endl;
+        printCardCandidates("North", round.northDetected);
+        printCardCandidates("South", round.southDetected);
+        std::cout << " Leader candidates: " << round.leaderDetected.size()
+                  << std::endl;
+    }
+
+    printCardCandidates("Briscola", prediction.briscolaDetected);
+    std::cout << "=======================================================" << std::endl;
 
     // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
     // GamePrediction prediction = JsonReader::readGamePrediction(jsonPath);
@@ -311,8 +476,22 @@ int main(int argc, char** argv) {
               << before.cardIssues.size() << std::endl;
 
     int cardCorrections = ErrorResolver::resolveCardIssues(game);
-    int briscolaCorrections = ErrorResolver::resolveBriscola(game);
-    int leaderCorrections = ErrorResolver::resolveLeaderIssues(game);
+    int briscolaCorrections = 0;
+    int leaderCorrections = 0;
+
+    ValidationResult afterCards = Validator::validate(game);
+
+    if (afterCards.cardIssues.empty()) {
+
+        briscolaCorrections =
+            ErrorResolver::resolveBriscola(game);
+
+        leaderCorrections =
+            ErrorResolver::resolveLeaderIssues(game);
+
+        briscolaCorrections +=
+            ErrorResolver::resolveBriscola(game);
+    }
 
     briscolaCorrections += ErrorResolver::resolveBriscola(game);
 

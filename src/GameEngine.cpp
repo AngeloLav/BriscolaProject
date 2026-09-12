@@ -28,6 +28,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
             round.north = predictionRound.northDetected[0].card;
         }
         else {
+            round.north.value = 0;
+            round.north.type = CardType::COINS;
             cardsComplete = false;
         }
 
@@ -35,6 +37,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
             round.south = predictionRound.southDetected[0].card;
         }
         else {
+            round.south.value = 0;
+            round.south.type = CardType::COINS;
             cardsComplete = false;
         }
 

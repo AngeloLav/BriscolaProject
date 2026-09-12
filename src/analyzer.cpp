@@ -79,13 +79,25 @@ Player detWinner(Card northCard, Card southCard, Card briscolaCard, Player leade
 std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<Card>& cards) {
     std::vector<CardDetected> result;
     if (cards.empty()) return result;
+
     std::map<std::pair<int, int>, int> counts;
     for (const auto& c : cards) {
-        if (c.value > 0) {
-            counts[{static_cast<int>(c.type), c.value}]++;
-        }
+        const int type = static_cast<int>(c.type);
+        if (c.value < 1 || c.value > 10 || type < 0 || type > 3) continue;
+
+        counts[{type, c.value}]++;
     }
-    double total = static_cast<double>(cards.size());
+
+    if (counts.empty()) return result;
+
+    int validCardCount = 0;
+    for (const auto& entry : counts) {
+        validCardCount += entry.second;
+    }
+
+    // This is temporal voting confidence: detector.confidence is not part of
+    // the current vector<Card> API and therefore cannot be propagated here.
+    double total = static_cast<double>(validCardCount);
     for (const auto& entry : counts) {
         CardDetected cd;
         cd.card = { static_cast<CardType>(entry.first.first), entry.first.second };

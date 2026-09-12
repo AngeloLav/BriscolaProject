@@ -64,7 +64,7 @@ Card CardRecognizer::parseCardInfoFromFilename(const std::string& filename) {
 
 
 Card CardRecognizer::identifyCard(const cv::Mat& croppedCard) {
-    Card bestMatchCard = { CardType::COINS, 0 };
+    Card bestMatchCard = {};
     if (croppedCard.empty() || referenceDeck.empty()) {
         return bestMatchCard;
     }
