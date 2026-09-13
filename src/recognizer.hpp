@@ -21,7 +21,7 @@ public:
     //loads the cards and calculates the Sift's descriptors
     CardRecognizer(const std::string& referenceFolderPath);
     //recives tje card's roi and returns the recognized card
-    Card identifyCard(const cv::Mat& croppedcard);
+    std::vector<CardDetected> identifyCard(const cv::Mat& croppedcard);
 
 private:
     std::vector<refCard> referenceDeck;

@@ -76,38 +76,66 @@ Player detWinner(Card northCard, Card southCard, Card briscolaCard, Player leade
     return leader;
 }
 //this function returns a vector of CardDetected which contains the cards detected and their confidence
-std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<Card>& cards) {
+std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<std::vector<CardDetected>>& observations) {
     std::vector<CardDetected> result;
-    if (cards.empty()) return result;
+    if (observations.empty()) return result;
 
-    std::map<std::pair<int, int>, int> counts;
-    for (const auto& c : cards) {
-        const int type = static_cast<int>(c.type);
-        if (c.value < 1 || c.value > 10 || type < 0 || type > 3) continue;
+    std::map<std::pair<int, int>, std::vector<double>> scores;
+    std::map<std::pair<int, int>, int> occurrences;
 
-        counts[{type, c.value}]++;
+    // Each inner vector contains the candidates produced for one detector
+    // observation. Candidates in the same vector belong to the same frame/box.
+    for (const auto& candidates : observations) {
+        for (const auto& detection : candidates) {
+            const int type = static_cast<int>(detection.card.type);
+
+            if (detection.card.value < 1 ||
+                detection.card.value > 10 ||
+                type < 0 ||
+                type > 3) {
+                continue;
+            }
+
+            const std::pair<int, int> key = {
+                type,
+                detection.card.value
+            };
+
+            scores[key].push_back(detection.confidence);
+            occurrences[key]++;
+        }
     }
 
-    if (counts.empty()) return result;
+    if (scores.empty()) return result;
 
-    int validCardCount = 0;
-    for (const auto& entry : counts) {
-        validCardCount += entry.second;
-    }
+    const double totalObservations = static_cast<double>(observations.size());
+    for (const auto& entry : scores) {
+        double scoreSum = 0;
+        double maxScore = 0;
+        for (const double score : entry.second) {
+            scoreSum += score;
+            if (score > maxScore) {
+                maxScore = score;
+            }
+        }
 
-    // This is temporal voting confidence: detector.confidence is not part of
-    // the current vector<Card> API and therefore cannot be propagated here.
-    double total = static_cast<double>(validCardCount);
-    for (const auto& entry : counts) {
+        const double meanScore = scoreSum / static_cast<double>(entry.second.size());
+        // Prefer cards that appear repeatedly across observations.
+        const double occurrenceRatio = static_cast<double>(occurrences[entry.first]) / totalObservations;
+
         CardDetected cd;
         cd.card = { static_cast<CardType>(entry.first.first), entry.first.second };
-        cd.confidence = entry.second / total; 
+        // Combine the strongest SIFT match with the average match quality.
+        cd.confidence = (0.7 * maxScore + 0.3 * meanScore) * occurrenceRatio;
         result.push_back(cd);
     }
 
     std::sort(result.begin(), result.end(), [](const CardDetected& a, const CardDetected& b) {
         return a.confidence > b.confidence;
     });
+
+    if (result.size() > 3)
+        result.resize(3);
 
     return result;
 }

@@ -63,10 +63,10 @@ Card CardRecognizer::parseCardInfoFromFilename(const std::string& filename) {
 }
 
 
-Card CardRecognizer::identifyCard(const cv::Mat& croppedCard) {
-    Card bestMatchCard = {};
+std::vector<CardDetected> CardRecognizer::identifyCard(const cv::Mat& croppedCard) {
+    std::vector<CardDetected> candidates;
     if (croppedCard.empty() || referenceDeck.empty()) {
-        return bestMatchCard;
+        return {};
     }
 
     cv::Mat grayCrop;
@@ -80,11 +80,10 @@ Card CardRecognizer::identifyCard(const cv::Mat& croppedCard) {
     cv::Mat cropDescriptors;
     siftDetector->detectAndCompute(grayCrop, cv::noArray(), cropKeypoints, cropDescriptors);
     if (cropDescriptors.empty()||cropKeypoints.size() < 4) {
-        return bestMatchCard;
+        return {};
     }
 
     cv::BFMatcher matcher(cv::NORM_L2);
-    int maxInliers = -1;
     //iterate through each reference card and perform matching
     for (const auto& refCard:referenceDeck) {
         if (refCard.descriptors.empty()) continue;
@@ -107,12 +106,45 @@ Card CardRecognizer::identifyCard(const cv::Mat& croppedCard) {
             cv::Mat H=cv::findHomography(srcPoints, dstPoints, cv::RANSAC, 5.0, inlierMask);
             if (!H.empty()) {
                 int inlierCount=cv::countNonZero(inlierMask);
-                if (inlierCount>maxInliers) {
-                    maxInliers=inlierCount;
-                    bestMatchCard=refCard.cardInfo;
+                // Keep only homographies supported by more than four RANSAC inliers.
+                // Lower values produced unreliable matches during video tests.
+                if (inlierCount > 4) {
+                    CardDetected candidate;
+                    candidate.card = refCard.cardInfo;
+                    candidate.confidence = static_cast<double>(inlierCount);
+                    candidates.push_back(candidate);
                 }
             }
         }
     }
-    return bestMatchCard;
+
+    if (candidates.empty())
+        return {};
+
+    // Normalize scores within this crop so that the strongest candidate has
+    // confidence 1.0. This is a relative score, not an absolute probability.
+    double maxConfidence = 0.0;
+    for (const auto& candidate : candidates) {
+        maxConfidence = std::max(maxConfidence, candidate.confidence);
+    }
+
+    if (maxConfidence <= 0.0)
+        return {};
+
+    for (auto& candidate : candidates) {
+        candidate.confidence /= maxConfidence;
+    }
+
+    std::sort(
+        candidates.begin(),
+        candidates.end(),
+        [](const CardDetected& a, const CardDetected& b) {
+            return a.confidence > b.confidence;
+        }
+    );
+
+    if (candidates.size() > 3)
+        candidates.resize(3);
+
+    return candidates;
 }

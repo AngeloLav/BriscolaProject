@@ -176,7 +176,8 @@ int main(int argc, char** argv) {
     cv::resizeWindow("Briscola video", 1280, 720);
 
     GamePrediction prediction;
-    std::vector<Card> allBriscolaDetections;
+    
+    std::vector<std::vector<CardDetected>> allBriscolaDetections;
 
     int fallbackRoundNumber = 1;
 
@@ -206,9 +207,9 @@ int main(int argc, char** argv) {
 
         cv::Mat frame;
 
-        std::vector<Card> northDetections;
-        std::vector<Card> southDetections;
-        std::vector<Card> briscolaDetections;
+        std::vector<std::vector<CardDetected>> northDetections;
+        std::vector<std::vector<CardDetected>> southDetections;
+        std::vector<std::vector<CardDetected>> briscolaDetections;
 
         int sampledFrames = 0;
         int detectorDetections = 0;
@@ -223,10 +224,12 @@ int main(int argc, char** argv) {
         int firstSouthFrame = -1;
 
         // Limita i frame presi, non so se poi volete calibrare meglio o togliere
+        // Sample a fixed number of frames from each video during CV testing.
         int totalFrames = static_cast<int>(
             video.get(cv::CAP_PROP_FRAME_COUNT)
         );
-        int frameStep = std::max(1, totalFrames / 2);
+
+        int frameStep = std::max(1, totalFrames / 15);
         int frameIndex = 0;
 
 
@@ -273,27 +276,46 @@ int main(int argc, char** argv) {
                 cv::Rect safebox=detection.box & cv::Rect(0, 0, frame.cols, frame.rows); // This is to avoid the case where the BB is partially outside the frame
                 if(safebox.width<=0||safebox.height<=0) continue; // This is to avoid the case where the BB is completely outside the frame
                 cv::Mat croppedcard=frame(safebox);
-                Card recognizedCard=recognizer.identifyCard(croppedcard);
+                std::vector<CardDetected> recognizedCards =
+                    recognizer.identifyCard(croppedcard);
 
                 std::cout << "[CV] frame=" << frameIndex
                           << " | class=" << detection.classId
-                          << " | recognized=" << recognizedCard.value
-                          << " of " << suitToString(recognizedCard.type);
+                          << " | candidates=" << recognizedCards.size();
 
-                if (!isValidRecognizedCard(recognizedCard)) {
+                if (recognizedCards.empty()) {
                     recognitionFailures++;
-                    std::cout << " | rejected: invalid Card" << std::endl;
+                    std::cout << " | rejected: no match" << std::endl;
+                    continue;
+                }
+
+                // Keep all valid candidates from this detector box together.
+                // The inner vector represents one observation and must not be counted
+                // as multiple independent frames by the analyzer.
+                std::vector<CardDetected> validCandidates;
+
+                for (const auto& candidate : recognizedCards) {
+                    if (isValidRecognizedCard(candidate.card)) {
+                        validCandidates.push_back(candidate);
+                    }
+                }
+
+                if (validCandidates.empty()) {
+                    recognitionFailures++;
+                    std::cout << " | rejected: invalid candidates" << std::endl;
                     continue;
                 }
 
                 std::cout << std::endl;
 
-                // class 0 is Briscola-Cards and class 1 is Played-Card;
-                // this must match Detector::drawDetections().
+                // Store the complete candidate set for this observation.
+                // ErrorResolver may need the second or third candidate later.
                 if (detection.classId == BRISCOLA_CLASS_ID) {
                     briscolaClassDetections++;
-                    briscolaDetections.push_back(recognizedCard);
-                    allBriscolaDetections.push_back(recognizedCard);
+
+                    briscolaDetections.push_back(validCandidates);
+                    allBriscolaDetections.push_back(validCandidates);
+
                     continue;
                 }
 
@@ -307,12 +329,12 @@ int main(int argc, char** argv) {
                 playedCardClassDetections++;
                 int centerY=safebox.y+safebox.height/2;
                 //int centerX=safebox.x+safebox.width/2;
-                if(centerY<frame.rows/2){
-                    northDetections.push_back(recognizedCard);
-                    if(firstNorthFrame==-1) firstNorthFrame=frameIndex;
-                }else{
-                    southDetections.push_back(recognizedCard);
-                    if(firstSouthFrame==-1) firstSouthFrame=frameIndex;
+                if (centerY < frame.rows / 2) {
+                    northDetections.push_back(validCandidates);
+                    if (firstNorthFrame == -1) firstNorthFrame = frameIndex;
+                } else {
+                    southDetections.push_back(validCandidates);
+                    if (firstSouthFrame == -1) firstSouthFrame = frameIndex;
                 }
             }
 
