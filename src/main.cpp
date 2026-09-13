@@ -110,9 +110,6 @@ int main(int argc, char** argv) {
             ? ""
             : folderWithoutSlash.substr(0, lastSlash + 1);
 
-    std::string jsonPath =
-        gameFolder + "prediction.json";
-
     std::string resultsFolder =
         dataFolder + "results/";
 
@@ -172,8 +169,8 @@ int main(int argc, char** argv) {
     
     Detector detector("model/best.onnx");
     CardRecognizer recognizer("Briscola_Trentine");
-    cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Briscola video", 1280, 720);
+    //cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
+    //cv::resizeWindow("Briscola video", 1280, 720);
 
     GamePrediction prediction;
     
@@ -229,11 +226,12 @@ int main(int argc, char** argv) {
             video.get(cv::CAP_PROP_FRAME_COUNT)
         );
 
-        int frameStep = std::max(1, totalFrames / 15);
+        int firstTwoThirdsFrames = std::max(1, totalFrames * 2 / 3);
+        int frameStep = std::max(1, firstTwoThirdsFrames / 25);
         int frameIndex = 0;
 
 
-        while (video.read(frame)) {
+        while (frameIndex < firstTwoThirdsFrames && video.read(frame)) {
 
             // Skip frames
             if (frameIndex % frameStep != 0) {
@@ -339,14 +337,14 @@ int main(int argc, char** argv) {
             }
 
             // Used for development, maybe it will be commented in the final project
-            detector.drawDetections(frame, detections);
+            //detector.drawDetections(frame, detections);
 
             // Showing each frame
-            cv::imshow("Briscola video", frame);
-            int key = cv::waitKey(30);
+            //cv::imshow("Briscola video", frame);
+            //int key = cv::waitKey(30);
 
             // If user presses ESC the video stops
-            if (key == 27) break;
+            //if (key == 27) break;
 
             frameIndex++;
             //cv::imshow("Briscola video", frame);
@@ -467,8 +465,10 @@ int main(int argc, char** argv) {
     printCardCandidates("Briscola", prediction.briscolaDetected);
     std::cout << "=======================================================" << std::endl;
 
-    // Read the json for debugging (probabilmente sta parte di json sarà meglio toglierla, ora mi serve per testare più partite plausibile)
-    // GamePrediction prediction = JsonReader::readGamePrediction(jsonPath);
+    // JSON predictions were used to test GameEngine, Validator and ErrorResolver.
+    // prediction = JsonReader::readGamePrediction(
+    //     gameFolder + "prediction.json"
+    // );
 
     /*
     // Known briscola: this test is only for UNKNOWN played cards
