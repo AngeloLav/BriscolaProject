@@ -32,27 +32,46 @@ namespace {
 // Keep these ids in sync with Detector::drawDetections().
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
+constexpr bool PRINT_FRAME_DETECTIONS = true;
 
-void printCardCandidates(
-    const std::string& label,
-    const std::vector<CardDetected>& candidates
-) {
-    std::cout << " " << label << ":";
-
+void printCards(const std::vector<CardDetected>& candidates) {
     if (candidates.empty()) {
-        std::cout << " <empty>" << std::endl;
+        std::cout << "-";
         return;
     }
 
     for (size_t i = 0; i < candidates.size(); i++) {
         const auto& candidate = candidates[i];
 
-        std::cout << (i == 0 ? " " : " | ")
-                  << candidate.card.value << " of "
+        std::cout << (i == 0 ? "" : " | ")
+                  << candidate.card.value << " "
                   << suitToString(candidate.card.type)
                   << " (" << candidate.confidence << ")";
     }
+}
 
+void printCardCandidates(
+    const std::string& label,
+    const std::vector<CardDetected>& candidates
+) {
+    std::cout << " " << label << ": ";
+    printCards(candidates);
+    std::cout << std::endl;
+}
+
+void printFrameDetections(
+    int round,
+    int frame,
+    const std::vector<CardDetected>& north,
+    const std::vector<CardDetected>& south,
+    const std::vector<CardDetected>& briscola
+) {
+    std::cout << "[Round " << round << " | Frame " << frame << "] \n N: ";
+    printCards(north);
+    std::cout << " \nS: ";
+    printCards(south);
+    std::cout << " \nB: ";
+    printCards(briscola);
     std::cout << std::endl;
 }
 
@@ -139,6 +158,9 @@ int main(int argc, char** argv) {
             }
 
             std::vector<Detection> detections = detector.detect(frame);
+            std::vector<CardDetected> frameNorthCandidates;
+            std::vector<CardDetected> frameSouthCandidates;
+            std::vector<CardDetected> frameBriscolaCandidates;
             
             // NB. For the next that will work on this: each detection contains:
             // - detection.box --> bb in the original frame coordinates
@@ -191,6 +213,11 @@ int main(int argc, char** argv) {
                 // ErrorResolver may need the second or third candidate later.
                 if (detection.classId == BRISCOLA_CLASS_ID) {
                     allBriscolaDetections.push_back({validCandidates});
+                    frameBriscolaCandidates.insert(
+                        frameBriscolaCandidates.end(),
+                        validCandidates.begin(),
+                        validCandidates.end()
+                    );
 
                     continue;
                 }
@@ -203,11 +230,31 @@ int main(int argc, char** argv) {
                 //int centerX=safebox.x+safebox.width/2;
                 if (centerY < frame.rows / 2) {
                     northDetections.push_back({validCandidates});
+                    frameNorthCandidates.insert(
+                        frameNorthCandidates.end(),
+                        validCandidates.begin(),
+                        validCandidates.end()
+                    );
                     if (firstNorthFrame == -1) firstNorthFrame = frameIndex;
                 } else {
                     southDetections.push_back({validCandidates});
+                    frameSouthCandidates.insert(
+                        frameSouthCandidates.end(),
+                        validCandidates.begin(),
+                        validCandidates.end()
+                    );
                     if (firstSouthFrame == -1) firstSouthFrame = frameIndex;
                 }
+            }
+
+            if (PRINT_FRAME_DETECTIONS) {
+                printFrameDetections(
+                    roundNumber,
+                    frameIndex,
+                    frameNorthCandidates,
+                    frameSouthCandidates,
+                    frameBriscolaCandidates
+                );
             }
 
             frameIndex++;
