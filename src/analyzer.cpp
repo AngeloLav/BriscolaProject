@@ -76,7 +76,7 @@ Player detWinner(Card northCard, Card southCard, Card briscolaCard, Player leade
     return leader;
 }
 //this function returns a vector of CardDetected which contains the cards detected and their confidence
-std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<std::vector<CardDetected>>& observations) {
+std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObservation>& observations) {
     std::vector<CardDetected> result;
     if (observations.empty()) return result;
 
@@ -85,8 +85,8 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<std::ve
 
     // Each inner vector contains the candidates produced for one detector
     // observation. Candidates in the same vector belong to the same frame/box.
-    for (const auto& candidates : observations) {
-        for (const auto& detection : candidates) {
+    for (const auto& observation : observations) {
+        for (const auto& detection : observation.candidates) {
             const int type = static_cast<int>(detection.card.type);
 
             if (detection.card.value < 1 ||

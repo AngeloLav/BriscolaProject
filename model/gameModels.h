@@ -26,6 +26,11 @@ struct CardDetected {
     double confidence;
 };
 
+// Represents a possible observation of a card
+struct CardObservation {
+    std::vector<CardDetected> candidates;
+};
+
 // Represents a possible prediction for the player who led the round
 struct PlayerDetected {
     Player player;

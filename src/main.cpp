@@ -177,7 +177,7 @@ int main(int argc, char** argv) {
 
     GamePrediction prediction;
     
-    std::vector<std::vector<CardDetected>> allBriscolaDetections;
+    std::vector<CardObservation> allBriscolaDetections;
 
     int fallbackRoundNumber = 1;
 
@@ -207,9 +207,9 @@ int main(int argc, char** argv) {
 
         cv::Mat frame;
 
-        std::vector<std::vector<CardDetected>> northDetections;
-        std::vector<std::vector<CardDetected>> southDetections;
-        std::vector<std::vector<CardDetected>> briscolaDetections;
+        std::vector<CardObservation> northDetections;
+        std::vector<CardObservation> southDetections;
+        std::vector<CardObservation> briscolaDetections;
 
         int sampledFrames = 0;
         int detectorDetections = 0;
@@ -313,8 +313,8 @@ int main(int argc, char** argv) {
                 if (detection.classId == BRISCOLA_CLASS_ID) {
                     briscolaClassDetections++;
 
-                    briscolaDetections.push_back(validCandidates);
-                    allBriscolaDetections.push_back(validCandidates);
+                    briscolaDetections.push_back({validCandidates});
+                    allBriscolaDetections.push_back({validCandidates});
 
                     continue;
                 }
@@ -330,10 +330,10 @@ int main(int argc, char** argv) {
                 int centerY=safebox.y+safebox.height/2;
                 //int centerX=safebox.x+safebox.width/2;
                 if (centerY < frame.rows / 2) {
-                    northDetections.push_back(validCandidates);
+                    northDetections.push_back({validCandidates});
                     if (firstNorthFrame == -1) firstNorthFrame = frameIndex;
                 } else {
-                    southDetections.push_back(validCandidates);
+                    southDetections.push_back({validCandidates});
                     if (firstSouthFrame == -1) firstSouthFrame = frameIndex;
                 }
             }

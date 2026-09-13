@@ -10,5 +10,5 @@ int getCardRank(int value);
 std::string suitToString(CardType type);
 Card getMostFreqCard(const std::vector<Card>& cards);
 Player detWinner(Card northCard, Card southCard, Card briscolaCard, Player leader);
-std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<std::vector<CardDetected>>& observations);
+std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObservation>& observations);
 #endif
