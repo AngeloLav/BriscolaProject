@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
         );
 
         int firstTwoThirdsFrames = std::max(1, totalFrames * 2 / 3);
-        int frameStep = std::max(1, firstTwoThirdsFrames / 40);
+        int frameStep = std::max(1, firstTwoThirdsFrames / 30);
         int frameIndex = 0;
 
 
@@ -226,24 +226,44 @@ int main(int argc, char** argv) {
                     continue;
                 }
 
-                int centerY=safebox.y+safebox.height/2;
-                //int centerX=safebox.x+safebox.width/2;
+                int centerY = safebox.y + safebox.height / 2;
+
                 if (centerY < frame.rows / 2) {
+                    if (firstNorthFrame != -1 &&
+                        firstSouthFrame != -1 &&
+                        firstNorthFrame < firstSouthFrame) {
+                        continue;
+                    }
+
                     northDetections.push_back({validCandidates});
+
                     frameNorthCandidates.insert(
                         frameNorthCandidates.end(),
                         validCandidates.begin(),
                         validCandidates.end()
                     );
-                    if (firstNorthFrame == -1) firstNorthFrame = frameIndex;
+
+                    if (firstNorthFrame == -1) {
+                        firstNorthFrame = frameIndex;
+                    }
                 } else {
+                    if (firstNorthFrame != -1 &&
+                        firstSouthFrame != -1 &&
+                        firstSouthFrame < firstNorthFrame) {
+                        continue;
+                    }
+
                     southDetections.push_back({validCandidates});
+
                     frameSouthCandidates.insert(
                         frameSouthCandidates.end(),
                         validCandidates.begin(),
                         validCandidates.end()
                     );
-                    if (firstSouthFrame == -1) firstSouthFrame = frameIndex;
+
+                    if (firstSouthFrame == -1) {
+                        firstSouthFrame = frameIndex;
+                    }
                 }
             }
 
