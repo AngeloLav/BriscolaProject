@@ -367,31 +367,6 @@ int main(int argc, char** argv) {
     printCardCandidates("Briscola", prediction.briscolaDetected);
     std::cout << "=======================================================" << std::endl;
 
-    // JSON predictions were used to test GameEngine, Validator and ErrorResolver.
-    // prediction = JsonReader::readGamePrediction(
-    //     input.gameFolder + "prediction.json"
-    // );
-
-    /*
-    // Known briscola: this test is only for UNKNOWN played cards
-    prediction.briscolaDetected.push_back({
-        { CardType::DENARI, 6 },
-        0.99
-    });
-
-    // Two failed card detections
-    prediction.rounds[7].leaderDetected.clear();
-    prediction.rounds[7].southDetected.clear();
-    prediction.rounds[7].northDetected.clear();
-
-    prediction.rounds[8].leaderDetected.clear();
-    prediction.rounds[8].southDetected.clear();
-    prediction.rounds[8].northDetected.clear();
-
-    // Leader detection is wrong
-    prediction.rounds[9].leaderDetected[0].player = Player::SOUTH;
-    */
-
     Game game = GameEngine::createGame(prediction);
 
     ValidationResult before = Validator::validate(game);
