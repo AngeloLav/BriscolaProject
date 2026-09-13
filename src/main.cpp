@@ -2,6 +2,7 @@
 #include "recognizer.hpp"
 #include "../model/gameModels.h"
 #include "analyzer.hpp"
+#include "GameInput.h"
 
 // Standard include
 #include <algorithm>
@@ -33,24 +34,6 @@ namespace {
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
 
-// Returns the round number from the video path
-int getRoundNumberFromVideoPath(const cv::String& videoPath) {
-    const std::string stem = std::filesystem::path(videoPath).stem().string();
-    const std::string marker = "round";
-    const std::size_t markerPosition = stem.rfind(marker);
-
-    if (markerPosition == std::string::npos) {
-        return std::numeric_limits<int>::max();
-    }
-
-    try {
-        return std::stoi(stem.substr(markerPosition + marker.size()));
-    }
-    catch (const std::exception&) {
-        return std::numeric_limits<int>::max();
-    }
-}
-
 void printCardCandidates(
     const std::string& label,
     const std::vector<CardDetected>& candidates
@@ -80,90 +63,9 @@ bool isValidRecognizedCard(const Card& card) {
 
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        std::cout << "Use the program with: ./briscola <game_folder>"
-                  << std::endl;
+    GameInput input;
+    if (!loadGameInput(argc, argv, input)) {
         return 1;
-    }
-
-    std::string gameFolder = argv[1];
-
-    if (!gameFolder.empty() &&
-        gameFolder.back() != '/' &&
-        gameFolder.back() != '\\') {
-        gameFolder += "/";
-    }
-
-    std::string folderWithoutSlash =
-        gameFolder.substr(0, gameFolder.size() - 1);
-
-    size_t lastSlash =
-        folderWithoutSlash.find_last_of("/\\");
-
-    std::string gameName =
-        (lastSlash == std::string::npos)
-            ? folderWithoutSlash
-            : folderWithoutSlash.substr(lastSlash + 1);
-
-    std::string dataFolder =
-        (lastSlash == std::string::npos)
-            ? ""
-            : folderWithoutSlash.substr(0, lastSlash + 1);
-
-    std::string resultsFolder =
-        dataFolder + "results/";
-
-    // Find the ground truth CSV inside the game folder.
-    std::vector<cv::String> csvFiles;
-
-    cv::glob(
-        gameFolder + "*.csv",
-        csvFiles,
-        false
-    );
-
-    if (csvFiles.empty()) {
-        std::cerr << "No CSV ground truth found in: "
-                  << gameFolder << std::endl;
-        return 1;
-    }
-
-    if (csvFiles.size() > 1) {
-        std::cerr << "More than one CSV found in: "
-                  << gameFolder << std::endl;
-        return 1;
-    }
-
-    std::string groundTruthPath = csvFiles[0];
-
-    // Video test code. json da togliere
-    std::vector<cv::String> videoFiles;
-
-    cv::glob(
-        gameFolder + "*.mp4",
-        videoFiles,
-        false
-    );
-
-        std::sort(
-        videoFiles.begin(),
-        videoFiles.end(),
-        [](const cv::String& lhs, const cv::String& rhs) {
-            const int lhsRound = getRoundNumberFromVideoPath(lhs);
-            const int rhsRound = getRoundNumberFromVideoPath(rhs);
-
-            if (lhsRound != rhsRound) {
-                return lhsRound < rhsRound;
-            }
-
-            return lhs < rhs;
-        }
-    );
-
-    std::cout << "Video files found: " << videoFiles.size() << std::endl;
-    if (videoFiles.size() != 20) {
-        std::cerr << "Warning: expected 20 round videos, found "
-                  << videoFiles.size() << std::endl;
     }
 
     
@@ -178,7 +80,7 @@ int main(int argc, char** argv) {
 
     int fallbackRoundNumber = 1;
 
-    for (const auto& videoPath : videoFiles) {
+    for (const auto& videoPath : input.videoFiles) {
         int roundNumber = getRoundNumberFromVideoPath(videoPath);
         if (roundNumber == std::numeric_limits<int>::max()) {
             roundNumber = fallbackRoundNumber;
@@ -467,7 +369,7 @@ int main(int argc, char** argv) {
 
     // JSON predictions were used to test GameEngine, Validator and ErrorResolver.
     // prediction = JsonReader::readGamePrediction(
-    //     gameFolder + "prediction.json"
+    //     input.gameFolder + "prediction.json"
     // );
 
     /*
@@ -542,22 +444,22 @@ int main(int argc, char** argv) {
 
     OutputWriter::writeTxt(
         game,
-        resultsFolder + gameName + "_output.txt"
+        input.resultsFolder + input.gameName + "_output.txt"
     );
 
     OutputWriter::writeCsv(
         game,
-        resultsFolder + gameName + "_results.csv"
+        input.resultsFolder + input.gameName + "_results.csv"
     );
 
-    std::cout << "\nGround truth: " << groundTruthPath << std::endl;
+    std::cout << "\nGround truth: " << input.groundTruthPath << std::endl;
     std::cout << "Evaluating metrics..." << std::endl;
 
     try {
         MetricsResult metrics =
             MetricsEvaluator::evaluate(
                 game,
-                groundTruthPath
+                input.groundTruthPath
             );
 
         std::cout << "Metrics calculated." << std::endl;
@@ -566,7 +468,7 @@ int main(int argc, char** argv) {
 
         MetricsEvaluator::writeMetrics(
             metrics,
-            resultsFolder + gameName + "_metrics.txt"
+            input.resultsFolder + input.gameName + "_metrics.txt"
         );
     }
     catch (const std::exception& e) {

@@ -17,6 +17,7 @@ include_directories(
 add_executable(
     briscola
     src/main.cpp
+    src/GameInput.cpp
     src/detector.cpp
     src/recognizer.cpp
     src/analyzer.cpp
