@@ -143,7 +143,13 @@ int main(int argc, char** argv) {
 
         cv::Rect firstCardBox;
 
+        int firstCardFrame = -1;
+
         int firstCardSide = -1;
+
+        cv::Rect secondCardBox;
+
+        int secondCardFrame = -1;
 
         // Limita i frame presi, non so se poi volete calibrare meglio o togliere
         // Sample a fixed number of frames from each video during CV testing.
@@ -238,6 +244,7 @@ int main(int argc, char** argv) {
                 cv::Rect currentBox = safebox;
                 bool isNorthZone =
                     currentBox.y + currentBox.height / 2 < frame.rows / 2;
+                int currentSide = isNorthZone ? 0 : 1;
 
                 // Detect transition from first played card to second played card
                 if (!secondCardDetected)
@@ -245,9 +252,10 @@ int main(int argc, char** argv) {
                     if (firstCardBox.empty())
                     {
                         firstCardBox = currentBox;
+                        firstCardFrame = frameIndex;
                         firstCardSide = isNorthZone ? 0 : 1;
                     }
-                    else
+                    else if (currentSide != firstCardSide)
                     {
                         double distance =
                             cv::norm(
@@ -262,10 +270,23 @@ int main(int argc, char** argv) {
                                 )
                             );
 
+                        double frameCenterY = frame.rows / 2.0;
+                        double firstCardCenterY =
+                            firstCardBox.y + firstCardBox.height / 2.0;
+                        double currentCardCenterY =
+                            currentBox.y + currentBox.height / 2.0;
+
+                        bool currentCardIsCloserToCenter =
+                            std::abs(currentCardCenterY - frameCenterY) <
+                            std::abs(firstCardCenterY - frameCenterY);
+
                         // A new independent card appeared
-                        if (distance > SECOND_CARD_DISTANCE_THRESHOLD)
+                        if (distance > SECOND_CARD_DISTANCE_THRESHOLD &&
+                            currentCardIsCloserToCenter)
                         {
                             secondCardDetected = true;
+                            secondCardBox = currentBox;
+                            secondCardFrame = frameIndex;
                         }
                     }
                 }
@@ -273,6 +294,10 @@ int main(int argc, char** argv) {
                 if (!secondCardDetected)
                 {
                     // Keep assigning detections to the first player
+                    if (currentSide != firstCardSide) {
+                        continue;
+                    }
+
                     if (firstCardSide == 0)
                     {
                         northDetections.push_back({validCandidates});
@@ -305,6 +330,10 @@ int main(int argc, char** argv) {
                 else
                 {
                     // Assign new detections to the second player
+                    if (currentSide == firstCardSide) {
+                        continue;
+                    }
+
                     if (firstCardSide == 0)
                     {
                         southDetections.push_back({validCandidates});
@@ -355,6 +384,41 @@ int main(int argc, char** argv) {
 
         currentRoundPred.northDetected = getRankedCardsWithConfidence(northDetections);
         currentRoundPred.southDetected = getRankedCardsWithConfidence(southDetections);
+
+        std::cout << "\nRound " << roundNumber << std::endl;
+        std::cout << "First card locked:" << std::endl;
+        if (firstCardSide == -1) {
+            std::cout << "- player: UNKNOWN" << std::endl;
+            std::cout << "- frame: -" << std::endl;
+            std::cout << "- bbox: -" << std::endl;
+        } else {
+            std::cout << "- player: "
+                      << (firstCardSide == 0 ? "NORTH" : "SOUTH")
+                      << std::endl;
+            std::cout << "- frame: " << firstCardFrame << std::endl;
+            std::cout << "- bbox: "
+                      << firstCardBox.x << ","
+                      << firstCardBox.y << ","
+                      << firstCardBox.width << ","
+                      << firstCardBox.height << std::endl;
+        }
+
+        std::cout << "Second card detected:" << std::endl;
+        if (!secondCardDetected) {
+            std::cout << "- frame: -" << std::endl;
+            std::cout << "- bbox: -" << std::endl;
+        } else {
+            std::cout << "- frame: " << secondCardFrame << std::endl;
+            std::cout << "- bbox: "
+                      << secondCardBox.x << ","
+                      << secondCardBox.y << ","
+                      << secondCardBox.width << ","
+                      << secondCardBox.height << std::endl;
+        }
+
+        std::cout << "Final candidates:" << std::endl;
+        printCardCandidates("North", currentRoundPred.northDetected);
+        printCardCandidates("South", currentRoundPred.southDetected);
 
         PlayerDetected leaderPred;
         if(firstNorthFrame != -1 && (firstSouthFrame == -1 || firstNorthFrame < firstSouthFrame)) {

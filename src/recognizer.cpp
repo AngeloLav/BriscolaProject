@@ -121,20 +121,6 @@ std::vector<CardDetected> CardRecognizer::identifyCard(const cv::Mat& croppedCar
     if (candidates.empty())
         return {};
 
-    // Normalize scores within this crop so that the strongest candidate has
-    // confidence 1.0. This is a relative score, not an absolute probability.
-    double maxConfidence = 0.0;
-    for (const auto& candidate : candidates) {
-        maxConfidence = std::max(maxConfidence, candidate.confidence);
-    }
-
-    if (maxConfidence <= 0.0)
-        return {};
-
-    for (auto& candidate : candidates) {
-        candidate.confidence /= maxConfidence;
-    }
-
     std::sort(
         candidates.begin(),
         candidates.end(),

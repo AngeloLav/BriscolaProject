@@ -111,8 +111,21 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
         CardDetected cd;
         cd.card = { static_cast<CardType>(entry.first.first), entry.first.second };
         // Confidence is computed using SIFT score and temporal stability
-        cd.confidence = calculateCardConfidence(entry.second);
+        cd.confidence = calculateCardConfidence(entry.second) *
+                        static_cast<double>(entry.second.size()) /
+                        static_cast<double>(observations.size());
         result.push_back(cd);
+    }
+
+    double maxConfidence = 0.0;
+    for (const auto& candidate : result) {
+        maxConfidence = std::max(maxConfidence, candidate.confidence);
+    }
+
+    if (maxConfidence > 0.0) {
+        for (auto& candidate : result) {
+            candidate.confidence /= maxConfidence;
+        }
     }
 
     std::sort(result.begin(), result.end(), [](const CardDetected& a, const CardDetected& b) {
