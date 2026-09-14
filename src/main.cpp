@@ -176,6 +176,21 @@ int main(int argc, char** argv) {
             std::vector<CardDetected> frameNorthCandidates;
             std::vector<CardDetected> frameSouthCandidates;
             std::vector<CardDetected> frameBriscolaCandidates;
+
+            // Count the played-card boxes in this frame before processing them. 2 boxes are needed to make the switch
+            std::vector<cv::Rect> playedCardBoxes;
+            for (const auto& detection : detections) {
+                if (detection.classId != PLAYED_CARD_CLASS_ID) {
+                    continue;
+                }
+
+                cv::Rect box =
+                    detection.box & cv::Rect(0, 0, frame.cols, frame.rows);
+
+                if (box.width > 0 && box.height > 0) {
+                    playedCardBoxes.push_back(box);
+                }
+            }
             
             // NB. For the next that will work on this: each detection contains:
             // - detection.box --> bb in the original frame coordinates
@@ -202,6 +217,31 @@ int main(int argc, char** argv) {
                 cv::Rect safebox=detection.box & cv::Rect(0, 0, frame.cols, frame.rows); // This is to avoid the case where the BB is partially outside the frame
                 if(safebox.width<=0||safebox.height<=0) continue; // This is to avoid the case where the BB is completely outside the frame
                 cv::Mat croppedcard=frame(safebox);
+
+                cv::Rect currentBox = safebox;
+                bool isNorthZone =
+                    currentBox.y + currentBox.height / 2 < frame.rows / 2;
+                int currentSide = isNorthZone ? 0 : 1;
+
+                // Require two played-card boxes in the same frame.
+                if (detection.classId == PLAYED_CARD_CLASS_ID &&
+                    !secondCardDetected &&
+                    !firstCardBox.empty() &&
+                    playedCardBoxes.size() >= 2 &&
+                    currentSide != firstCardSide) {
+                    double distance =
+                        cv::norm(
+                            cv::Point(currentBox.x, currentBox.y) -
+                            cv::Point(firstCardBox.x, firstCardBox.y)
+                        );
+
+                    if (distance > SECOND_CARD_DISTANCE_THRESHOLD) {
+                        secondCardDetected = true;
+                        secondCardBox = currentBox;
+                        secondCardFrame = frameIndex;
+                    }
+                }
+
                 std::vector<CardDetected> recognizedCards =
                     recognizer.identifyCard(croppedcard);
 
@@ -244,11 +284,6 @@ int main(int argc, char** argv) {
                     continue;
                 }
 
-                cv::Rect currentBox = safebox;
-                bool isNorthZone =
-                    currentBox.y + currentBox.height / 2 < frame.rows / 2;
-                int currentSide = isNorthZone ? 0 : 1;
-
                 // Detect transition from first played card to second played card
                 if (!secondCardDetected)
                 {
@@ -259,29 +294,10 @@ int main(int argc, char** argv) {
                         firstCardFrame = frameIndex;
                         firstCardSide = isNorthZone ? 0 : 1;
                     }
-                    else if (currentSide != firstCardSide)
-                    {
-                        // A box on the same side can only update the first card.
-                        // Only boxes on the opposite side can trigger the switch.
-                        double distance =
-                            cv::norm(
-                                cv::Point(
-                                    currentBox.x,
-                                    currentBox.y
-                                )
-                                -
-                                cv::Point(
-                                    firstCardBox.x,
-                                    firstCardBox.y
-                                )
-                            );
-
-                        if (distance > SECOND_CARD_DISTANCE_THRESHOLD)
-                        {
-                            secondCardDetected = true;
-                            secondCardBox = currentBox;
-                            secondCardFrame = frameIndex;
-                        }
+                    else if (currentSide != firstCardSide) {
+                        // The switch is handled above, only when two boxes
+                        // are present in the same frame.
+                        continue;
                     }
                 }
 
