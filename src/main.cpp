@@ -29,10 +29,9 @@
 
 namespace {
 
-// Keep these ids in sync with Detector::drawDetections().
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
-constexpr int FRAME_SCANNED_NUMBER = 30;
+constexpr int FRAME_SCANNED_NUMBER = 15;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 
@@ -305,20 +304,12 @@ int main(int argc, char** argv) {
                         firstCardFrame = frameIndex;
                         firstCardSide = isNorthZone ? 0 : 1;
                     }
-                    else if (currentSide != firstCardSide) {
-                        // The switch is handled above, only when two boxes
-                        // are present in the same frame.
-                        continue;
-                    }
                 }
 
                 if (!secondCardDetected)
                 {
-                    // Keep assigning detections to the first player
-                    // Opposite-side boxes are ignored until the switch is confirmed.
-                    if (currentSide != firstCardSide) {
-                        continue;
-                    }
+                    // Until two boxes are present in the same frame, every
+                    // recognized card still belongs to the first player.
 
                     if (firstCardSide == 0)
                     {
