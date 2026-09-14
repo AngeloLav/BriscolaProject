@@ -31,7 +31,7 @@ namespace {
 
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
-constexpr int FRAME_SCANNED_NUMBER = 30;
+constexpr int FRAME_SCANNED_NUMBER = 50;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 
@@ -343,8 +343,10 @@ int main(int argc, char** argv) {
                 else
                 {
                     // Assign new detections to the second player
-                    // The detector may still see the first card, so discard its side.
-                    if (currentSide == firstCardSide) {
+                    // If both boxes are still visible, discard the first card's side.
+                    // With only one box left, it is the second card moving towards the center.
+                    if (currentSide == firstCardSide &&
+                        playedCardBoxes.size() >= 2) {
                         continue;
                     }
 
