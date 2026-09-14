@@ -81,6 +81,7 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
     std::vector<CardDetected> result;
     if (observations.empty()) return result;
 
+    // Group detections of the same card collected from different frames.
     std::map<std::pair<int, int>, std::vector<CardDetected>> cardObservations;
 
     // Each inner vector contains the candidates produced for one detector
@@ -110,13 +111,14 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
     for (const auto& entry : cardObservations) {
         CardDetected cd;
         cd.card = { static_cast<CardType>(entry.first.first), entry.first.second };
-        // Confidence is computed using SIFT score and temporal stability
+        // Combine absolute SIFT quality, temporal stability and frequency.
         cd.confidence = calculateCardConfidence(entry.second) *
                         static_cast<double>(entry.second.size()) /
                         static_cast<double>(observations.size());
         result.push_back(cd);
     }
 
+    // Normalize only after all temporal observations have been combined.
     double maxConfidence = 0.0;
     for (const auto& candidate : result) {
         maxConfidence = std::max(maxConfidence, candidate.confidence);

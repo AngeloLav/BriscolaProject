@@ -111,6 +111,8 @@ std::vector<CardDetected> CardRecognizer::identifyCard(const cv::Mat& croppedCar
                 if (inlierCount > 4) {
                     CardDetected candidate;
                     candidate.card = refCard.cardInfo;
+                    // Keep the absolute SIFT score. Normalization is performed
+                    // only after observations from different frames are combined.
                     candidate.confidence = static_cast<double>(inlierCount);
                     candidates.push_back(candidate);
                 }
@@ -121,6 +123,7 @@ std::vector<CardDetected> CardRecognizer::identifyCard(const cv::Mat& croppedCar
     if (candidates.empty())
         return {};
 
+    // Keep the strongest alternatives produced for this single crop.
     std::sort(
         candidates.begin(),
         candidates.end(),

@@ -135,10 +135,12 @@ int main(int argc, char** argv) {
         std::vector<CardObservation> northDetections;
         std::vector<CardObservation> southDetections;
 
-        //who plays at first?
+        // First valid detection determines which player starts the round.
         int firstNorthFrame = -1;
         int firstSouthFrame = -1;
 
+        // Once a second independent box is found, detections are assigned
+        // to the other player and the first card is no longer updated.
         bool secondCardDetected = false;
 
         cv::Rect firstCardBox;
@@ -214,6 +216,7 @@ int main(int argc, char** argv) {
 
                 for (auto candidate : recognizedCards) {
                     if (isValidRecognizedCard(candidate.card)) {
+                        // Position and frame are used to measure temporal stability.
                         candidate.bbox = safebox;
                         candidate.frameIndex = frameIndex;
                         validCandidates.push_back(candidate);
@@ -251,12 +254,15 @@ int main(int argc, char** argv) {
                 {
                     if (firstCardBox.empty())
                     {
+                        // Lock the first played card and the side of its player.
                         firstCardBox = currentBox;
                         firstCardFrame = frameIndex;
                         firstCardSide = isNorthZone ? 0 : 1;
                     }
                     else if (currentSide != firstCardSide)
                     {
+                        // A box on the same side can only update the first card.
+                        // Only boxes on the opposite side can trigger the switch.
                         double distance =
                             cv::norm(
                                 cv::Point(
@@ -276,13 +282,14 @@ int main(int argc, char** argv) {
                         double currentCardCenterY =
                             currentBox.y + currentBox.height / 2.0;
 
-                        bool currentCardIsCloserToCenter =
-                            std::abs(currentCardCenterY - frameCenterY) <
+                        bool currentCardIsFurtherFromCenter =
+                            std::abs(currentCardCenterY - frameCenterY) >
                             std::abs(firstCardCenterY - frameCenterY);
 
-                        // A new independent card appeared
+                        // The second card must be separate from the first one
+                        // and initially farther from the center of the table.
                         if (distance > SECOND_CARD_DISTANCE_THRESHOLD &&
-                            currentCardIsCloserToCenter)
+                            currentCardIsFurtherFromCenter)
                         {
                             secondCardDetected = true;
                             secondCardBox = currentBox;
@@ -294,6 +301,7 @@ int main(int argc, char** argv) {
                 if (!secondCardDetected)
                 {
                     // Keep assigning detections to the first player
+                    // Opposite-side boxes are ignored until the switch is confirmed.
                     if (currentSide != firstCardSide) {
                         continue;
                     }
@@ -330,6 +338,7 @@ int main(int argc, char** argv) {
                 else
                 {
                     // Assign new detections to the second player
+                    // The detector may still see the first card, so discard its side.
                     if (currentSide == firstCardSide) {
                         continue;
                     }

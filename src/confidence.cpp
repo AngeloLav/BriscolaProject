@@ -3,6 +3,7 @@
 #include <cmath>
 
 
+// Combines the average SIFT score with the spatial stability of a card.
 double calculateCardConfidence(
     const std::vector<CardDetected>& detections
 )
@@ -22,6 +23,7 @@ double calculateCardConfidence(
 
         if (i > 0)
         {
+            // Center movement is less sensitive to small changes in box size.
             cv::Point previousCenter(
                 detections[i - 1].bbox.x + detections[i - 1].bbox.width / 2,
                 detections[i - 1].bbox.y + detections[i - 1].bbox.height / 2
