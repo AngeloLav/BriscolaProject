@@ -276,20 +276,7 @@ int main(int argc, char** argv) {
                                 )
                             );
 
-                        double frameCenterY = frame.rows / 2.0;
-                        double firstCardCenterY =
-                            firstCardBox.y + firstCardBox.height / 2.0;
-                        double currentCardCenterY =
-                            currentBox.y + currentBox.height / 2.0;
-
-                        bool currentCardIsFurtherFromCenter =
-                            std::abs(currentCardCenterY - frameCenterY) >
-                            std::abs(firstCardCenterY - frameCenterY);
-
-                        // The second card must be separate from the first one
-                        // and initially farther from the center of the table.
-                        if (distance > SECOND_CARD_DISTANCE_THRESHOLD &&
-                            currentCardIsFurtherFromCenter)
+                        if (distance > SECOND_CARD_DISTANCE_THRESHOLD)
                         {
                             secondCardDetected = true;
                             secondCardBox = currentBox;
