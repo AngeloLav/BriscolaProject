@@ -1,5 +1,6 @@
 //author: Camilla Bellantuono
 #include "analyzer.hpp"
+#include "confidence.h"
 #include <map>
 #include <algorithm>
 
@@ -80,8 +81,7 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
     std::vector<CardDetected> result;
     if (observations.empty()) return result;
 
-    std::map<std::pair<int, int>, std::vector<double>> scores;
-    std::map<std::pair<int, int>, int> occurrences;
+    std::map<std::pair<int, int>, std::vector<CardDetected>> cardObservations;
 
     // Each inner vector contains the candidates produced for one detector
     // observation. Candidates in the same vector belong to the same frame/box.
@@ -101,32 +101,17 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
                 detection.card.value
             };
 
-            scores[key].push_back(detection.confidence);
-            occurrences[key]++;
+            cardObservations[key].push_back(detection);
         }
     }
 
-    if (scores.empty()) return result;
+    if (cardObservations.empty()) return result;
 
-    const double totalObservations = static_cast<double>(observations.size());
-    for (const auto& entry : scores) {
-        double scoreSum = 0;
-        double maxScore = 0;
-        for (const double score : entry.second) {
-            scoreSum += score;
-            if (score > maxScore) {
-                maxScore = score;
-            }
-        }
-
-        const double meanScore = scoreSum / static_cast<double>(entry.second.size());
-        // Prefer cards that appear repeatedly across observations.
-        const double occurrenceRatio = static_cast<double>(occurrences[entry.first]) / totalObservations;
-
+    for (const auto& entry : cardObservations) {
         CardDetected cd;
         cd.card = { static_cast<CardType>(entry.first.first), entry.first.second };
-        // Combine the strongest SIFT match with the average match quality.
-        cd.confidence = (0.7 * maxScore + 0.3 * meanScore) * occurrenceRatio;
+        // Confidence is computed using SIFT score and temporal stability
+        cd.confidence = calculateCardConfidence(entry.second);
         result.push_back(cd);
     }
 

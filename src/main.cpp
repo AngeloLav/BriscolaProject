@@ -32,6 +32,7 @@ namespace {
 // Keep these ids in sync with Detector::drawDetections().
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
+const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 
 void printCards(const std::vector<CardDetected>& candidates) {
@@ -138,6 +139,12 @@ int main(int argc, char** argv) {
         int firstNorthFrame = -1;
         int firstSouthFrame = -1;
 
+        bool secondCardDetected = false;
+
+        cv::Rect firstCardBox;
+
+        int firstCardSide = -1;
+
         // Limita i frame presi, non so se poi volete calibrare meglio o togliere
         // Sample a fixed number of frames from each video during CV testing.
         int totalFrames = static_cast<int>(
@@ -199,8 +206,10 @@ int main(int argc, char** argv) {
                 // as multiple independent frames by the analyzer.
                 std::vector<CardDetected> validCandidates;
 
-                for (const auto& candidate : recognizedCards) {
+                for (auto candidate : recognizedCards) {
                     if (isValidRecognizedCard(candidate.card)) {
+                        candidate.bbox = safebox;
+                        candidate.frameIndex = frameIndex;
                         validCandidates.push_back(candidate);
                     }
                 }
@@ -226,43 +235,103 @@ int main(int argc, char** argv) {
                     continue;
                 }
 
-                int centerY = safebox.y + safebox.height / 2;
+                cv::Rect currentBox = safebox;
+                bool isNorthZone =
+                    currentBox.y + currentBox.height / 2 < frame.rows / 2;
 
-                if (centerY < frame.rows / 2) {
-                    if (firstNorthFrame != -1 &&
-                        firstSouthFrame != -1 &&
-                        firstNorthFrame < firstSouthFrame) {
-                        continue;
+                // Detect transition from first played card to second played card
+                if (!secondCardDetected)
+                {
+                    if (firstCardBox.empty())
+                    {
+                        firstCardBox = currentBox;
+                        firstCardSide = isNorthZone ? 0 : 1;
                     }
+                    else
+                    {
+                        double distance =
+                            cv::norm(
+                                cv::Point(
+                                    currentBox.x,
+                                    currentBox.y
+                                )
+                                -
+                                cv::Point(
+                                    firstCardBox.x,
+                                    firstCardBox.y
+                                )
+                            );
 
-                    northDetections.push_back({validCandidates});
-
-                    frameNorthCandidates.insert(
-                        frameNorthCandidates.end(),
-                        validCandidates.begin(),
-                        validCandidates.end()
-                    );
-
-                    if (firstNorthFrame == -1) {
-                        firstNorthFrame = frameIndex;
+                        // A new independent card appeared
+                        if (distance > SECOND_CARD_DISTANCE_THRESHOLD)
+                        {
+                            secondCardDetected = true;
+                        }
                     }
-                } else {
-                    if (firstNorthFrame != -1 &&
-                        firstSouthFrame != -1 &&
-                        firstSouthFrame < firstNorthFrame) {
-                        continue;
+                }
+
+                if (!secondCardDetected)
+                {
+                    // Keep assigning detections to the first player
+                    if (firstCardSide == 0)
+                    {
+                        northDetections.push_back({validCandidates});
+
+                        frameNorthCandidates.insert(
+                            frameNorthCandidates.end(),
+                            validCandidates.begin(),
+                            validCandidates.end()
+                        );
+
+                        if (firstNorthFrame == -1) {
+                            firstNorthFrame = frameIndex;
+                        }
                     }
+                    else
+                    {
+                        southDetections.push_back({validCandidates});
 
-                    southDetections.push_back({validCandidates});
+                        frameSouthCandidates.insert(
+                            frameSouthCandidates.end(),
+                            validCandidates.begin(),
+                            validCandidates.end()
+                        );
 
-                    frameSouthCandidates.insert(
-                        frameSouthCandidates.end(),
-                        validCandidates.begin(),
-                        validCandidates.end()
-                    );
+                        if (firstSouthFrame == -1) {
+                            firstSouthFrame = frameIndex;
+                        }
+                    }
+                }
+                else
+                {
+                    // Assign new detections to the second player
+                    if (firstCardSide == 0)
+                    {
+                        southDetections.push_back({validCandidates});
 
-                    if (firstSouthFrame == -1) {
-                        firstSouthFrame = frameIndex;
+                        frameSouthCandidates.insert(
+                            frameSouthCandidates.end(),
+                            validCandidates.begin(),
+                            validCandidates.end()
+                        );
+
+                        if (firstSouthFrame == -1) {
+                            firstSouthFrame = frameIndex;
+                        }
+                    }
+                    else
+                    {
+                        northDetections.push_back({validCandidates});
+
+                        frameNorthCandidates.insert(
+                            frameNorthCandidates.end(),
+                            validCandidates.begin(),
+                            validCandidates.end()
+                        );
+
+                        if (firstNorthFrame == -1) {
+                            firstNorthFrame = frameIndex;
+                        }
                     }
                 }
             }

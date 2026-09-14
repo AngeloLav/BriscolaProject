@@ -21,6 +21,7 @@ add_executable(
     src/detector.cpp
     src/recognizer.cpp
     src/analyzer.cpp
+    src/confidence.cpp
     src/JsonReader.cpp
     src/GameEngine.cpp
     src/BriscolaRules.cpp

@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <opencv2/opencv.hpp>
 
 enum class CardType {
     COINS,
@@ -24,6 +25,12 @@ struct Card {
 struct CardDetected {
     Card card;
     double confidence;
+
+    // Bounding box information for temporal tracking
+    cv::Rect bbox;
+
+    // Frame index where the detection was obtained
+    int frameIndex;
 };
 
 // Represents a possible observation of a card
