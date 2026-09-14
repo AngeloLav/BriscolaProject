@@ -32,6 +32,7 @@ namespace {
 // Keep these ids in sync with Detector::drawDetections().
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
+constexpr int FRAME_SCANNED_NUMBER = 30;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 
@@ -160,8 +161,9 @@ int main(int argc, char** argv) {
         );
 
         int firstTwoThirdsFrames = std::max(1, totalFrames * 2 / 3);
-        int frameStep = std::max(1, firstTwoThirdsFrames / 30);
+        int frameStep = std::max(1, firstTwoThirdsFrames / FRAME_SCANNED_NUMBER);
         int frameIndex = 0;
+        int scannedFrameCount = 0;
 
 
         while (frameIndex < firstTwoThirdsFrames && video.read(frame)) {
@@ -176,6 +178,8 @@ int main(int argc, char** argv) {
             std::vector<CardDetected> frameNorthCandidates;
             std::vector<CardDetected> frameSouthCandidates;
             std::vector<CardDetected> frameBriscolaCandidates;
+
+            bool scanBriscola = scannedFrameCount % std::max(1, FRAME_SCANNED_NUMBER / 3) == 0;
 
             // Count the played-card boxes in this frame before processing them. 2 boxes are needed to make the switch
             std::vector<cv::Rect> playedCardBoxes;
@@ -214,6 +218,13 @@ int main(int argc, char** argv) {
             // and ordering the detections, and counting points as it is described in the assignment
 
             for(const auto& detection : detections) {
+                // Skip Briscola detections unless it's time to scan for it.
+                // I scan for briscola only more or less 3 times because are enough and avoid computation waste
+                if (detection.classId == BRISCOLA_CLASS_ID &&
+                    !scanBriscola) {
+                    continue;
+                }
+
                 cv::Rect safebox=detection.box & cv::Rect(0, 0, frame.cols, frame.rows); // This is to avoid the case where the BB is partially outside the frame
                 if(safebox.width<=0||safebox.height<=0) continue; // This is to avoid the case where the BB is completely outside the frame
                 cv::Mat croppedcard=frame(safebox);
@@ -388,6 +399,7 @@ int main(int argc, char** argv) {
             }
 
             frameIndex++;
+            scannedFrameCount++;
         }
 
         //round's data
