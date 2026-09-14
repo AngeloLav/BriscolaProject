@@ -97,8 +97,8 @@ int main(int argc, char** argv) {
     
     Detector detector("model/best.onnx");
     CardRecognizer recognizer("Briscola_Trentine");
-    cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Briscola video", 1280, 720);
+    //cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
+    //cv::resizeWindow("Briscola video", 1280, 720);
 
     GamePrediction prediction;
     
