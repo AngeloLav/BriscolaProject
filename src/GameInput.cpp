@@ -51,6 +51,9 @@ bool loadGameInput(int argc, char** argv, GameInput& input) {
             : folderWithoutSlash.substr(0, lastSlash + 1);
 
     input.resultsFolder = dataFolder + "results/";
+    // Now the folder is created automatically   
+    std::filesystem::create_directories(input.resultsFolder);
+    
 
     // Find the ground truth CSV inside the game folder.
     std::vector<cv::String> csvFiles;
