@@ -31,7 +31,7 @@ namespace {
 
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
-constexpr int FRAME_SCANNED_NUMBER = 15;
+constexpr int FRAME_SCANNED_NUMBER = 30;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 
@@ -97,8 +97,8 @@ int main(int argc, char** argv) {
     
     Detector detector("model/best.onnx");
     CardRecognizer recognizer("Briscola_Trentine");
-    //cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
-    //cv::resizeWindow("Briscola video", 1280, 720);
+    cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
+    cv::resizeWindow("Briscola video", 1280, 720);
 
     GamePrediction prediction;
     
