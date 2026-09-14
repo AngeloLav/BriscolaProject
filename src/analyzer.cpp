@@ -134,8 +134,5 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
         return a.confidence > b.confidence;
     });
 
-    if (result.size() > 3)
-        result.resize(3);
-
     return result;
 }

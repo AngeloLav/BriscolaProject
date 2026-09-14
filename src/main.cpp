@@ -41,7 +41,9 @@ void printCards(const std::vector<CardDetected>& candidates) {
         return;
     }
 
-    for (size_t i = 0; i < candidates.size(); i++) {
+    size_t candidatesToPrint = std::min<size_t>(3, candidates.size());
+
+    for (size_t i = 0; i < candidatesToPrint; i++) {
         const auto& candidate = candidates[i];
 
         std::cout << (i == 0 ? "" : " | ")

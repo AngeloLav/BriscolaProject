@@ -132,8 +132,5 @@ std::vector<CardDetected> CardRecognizer::identifyCard(const cv::Mat& croppedCar
         }
     );
 
-    if (candidates.size() > 3)
-        candidates.resize(3);
-
     return candidates;
 }
