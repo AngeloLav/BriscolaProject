@@ -1,4 +1,4 @@
-Card recognition accuracy: 13/40
-Player identification accuracy: 20/40
-Briscola recognition accuracy: 0/1
+Card recognition accuracy: 11/40
+Player identification accuracy: 21/40
+Briscola recognition accuracy: 1/1
 Game result accuracy: 0/3

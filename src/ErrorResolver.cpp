@@ -306,18 +306,53 @@ int ErrorResolver::resolveBriscola(Game& game) {
     }
 
 
-    /*
-     * NORMAL CASE:
-     * Try all briscola candidates detected.
-     */
-    if (!game.prediction.briscolaDetected.empty()) {
+        /*
+        * NORMAL CASE:
+        * Try all briscola candidates detected.
+        */
+        if (!game.prediction.briscolaDetected.empty()) {
 
         Card originalBriscola = game.briscola;
+
+        /*
+        * If CV has a clearly dominant Briscola candidate,
+        * trust the visual evidence and do not let leader
+        * inconsistencies override it.
+        *
+        * Confidence values are normalized, therefore the
+        * strongest candidate normally has confidence = 1.
+        */
+        const auto& candidates =
+            game.prediction.briscolaDetected;
+
+        if (candidates.size() == 1 ||
+            candidates[1].confidence <
+                candidates[0].confidence * 0.5) {
+
+            game.briscola = candidates[0].card;
+
+            GameEngine::computeGame(game);
+
+            if (!sameCard(originalBriscola, game.briscola)) {
+                return 1;
+            }
+
+            return 0;
+        }
+
+
+        /*
+        * Ambiguous CV case:
+        * use game constraints to discriminate candidates.
+        */
         Card bestBriscola = game.briscola;
 
-        int bestLeaderIssues = std::numeric_limits<int>::max();
+        int bestLeaderIssues =
+            std::numeric_limits<int>::max();
+
         double bestConfidence = -1.0;
         bool bestPositionValid = false;
+        
 
 
         for (const auto& candidate : game.prediction.briscolaDetected) {
