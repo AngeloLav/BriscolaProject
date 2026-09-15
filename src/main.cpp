@@ -219,6 +219,13 @@ int main(int argc, char** argv) {
             // and ordering the detections, and counting points as it is described in the assignment
 
             for(const auto& detection : detections) {
+                
+                // Ignore classes that are not used by the pipeline.
+                if (detection.classId != BRISCOLA_CLASS_ID &&
+                    detection.classId != PLAYED_CARD_CLASS_ID) {
+                    continue;
+                }
+                
                 // Skip Briscola detections unless it's time to scan for it.
                 // I scan for briscola only more or less 3 times because are enough and avoid computation waste
                 if (detection.classId == BRISCOLA_CLASS_ID &&
@@ -252,6 +259,19 @@ int main(int argc, char** argv) {
                         secondCardBox = currentBox;
                         secondCardFrame = frameIndex;
                     }
+                }
+
+                // If both played cards are visible and the second card has already
+                // been detected, detections on the first player's side are discarded.
+                //
+                // IMPORTANT: do this BEFORE SIFT recognition because identifyCard()
+                // is one of the most expensive operations in the whole pipeline.
+                if (detection.classId == PLAYED_CARD_CLASS_ID &&
+                    secondCardDetected &&
+                    currentSide == firstCardSide &&
+                    playedCardBoxes.size() >= 2) {
+
+                    continue;
                 }
 
                 std::vector<CardDetected> recognizedCards =
@@ -347,10 +367,10 @@ int main(int argc, char** argv) {
                     // Assign new detections to the second player
                     // If both boxes are still visible, discard the first card's side.
                     // With only one box left, it is the second card moving towards the center.
-                    if (currentSide == firstCardSide &&
+                    /*if (currentSide == firstCardSide &&
                         playedCardBoxes.size() >= 2) {
                         continue;
-                    }
+                    }*/
 
                     if (firstCardSide == 0)
                     {
