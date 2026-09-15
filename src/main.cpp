@@ -27,6 +27,7 @@
 #include "OutputWriter.h"
 #include "MetricsEvaluator.h"
 
+
 namespace {
 
 constexpr int BRISCOLA_CLASS_ID = 0;
@@ -95,7 +96,6 @@ int main(int argc, char** argv) {
     if (!loadGameInput(argc, argv, input)) {
         return 1;
     }
-
     
     Detector detector("model/best.onnx");
     CardRecognizer recognizer("Briscola_Trentine");
@@ -120,10 +120,22 @@ int main(int argc, char** argv) {
                   << std::endl;
 
         cv::VideoCapture video(videoPath);
+
         if (!video.isOpened()) {
             std::cout << "Unable to open video: " << videoPath << std::endl;
             continue;
         }
+
+        // --- Orientation adjustment ---
+        double orientation =
+            video.get(cv::CAP_PROP_ORIENTATION_META);
+
+        bool orientationEnabled =
+            video.set(
+                cv::CAP_PROP_ORIENTATION_AUTO,
+                1
+            );
+
 
         /*
         Detector detector("model/best.onnx");
@@ -167,8 +179,10 @@ int main(int argc, char** argv) {
         int scannedFrameCount = 0;
 
 
-        while (frameIndex < firstTwoThirdsFrames && video.read(frame)) {
+        while (frameIndex < firstTwoThirdsFrames &&
+       scannedFrameCount < FRAME_SCANNED_NUMBER && video.read(frame)) {
 
+           
             // Skip frames
             if (frameIndex % frameStep != 0) {
                 frameIndex++;
