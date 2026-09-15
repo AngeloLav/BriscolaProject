@@ -6,7 +6,7 @@
 #include <iostream>
 #include <fstream>
 
-static constexpr double LOCKED_CARD_CONFIDENCE = 0.03;
+static constexpr double LOCKED_CARD_CONFIDENCE = 0.5;
 
 
 static bool sameCard(const Card& first, const Card& second) {
