@@ -6,6 +6,8 @@
 #include <iostream>
 #include <fstream>
 
+static constexpr double LOCKED_CARD_CONFIDENCE = 0.5;
+
 
 static bool sameCard(const Card& first, const Card& second) {
 
@@ -218,11 +220,7 @@ int ErrorResolver::resolveCardIssues(Game& game) {
 
         /*
         * If the remaining missing cards correspond exactly to the UNKNOWN
-        * positions, assign them in order.
-        *
-        * With one UNKNOWN the solution is forced.
-        * With multiple UNKNOWNs the assignment is only a temporary consistent
-        * solution that can later be improved using winner-leader constraints.
+        * positions, assign each position its strongest missing candidate.
         */
         if (!unknownPositions.empty() &&
             unknownPositions.size() == missingCards.size()) {
@@ -230,14 +228,38 @@ int ErrorResolver::resolveCardIssues(Game& game) {
             for (size_t i = 0; i < unknownPositions.size(); i++) {
 
                 int roundIndex = unknownPositions[i].round - 1;
+                int bestMissingIndex = -1;
+                double bestConfidence = -1.0;
+
+                for (size_t j = 0; j < missingCards.size(); j++) {
+
+                    double confidence = getCardConfidence(
+                        game,
+                        roundIndex,
+                        unknownPositions[i].player,
+                        missingCards[j]
+                    );
+
+                    if (confidence > bestConfidence) {
+                        bestConfidence = confidence;
+                        bestMissingIndex = static_cast<int>(j);
+                    }
+                }
+
+                if (bestMissingIndex < 0) {
+                    continue;
+                }
+
+                Card missingCard = missingCards[bestMissingIndex];
 
                 if (unknownPositions[i].player == Player::NORTH) {
-                    game.rounds[roundIndex].north = missingCards[i];
+                    game.rounds[roundIndex].north = missingCard;
                 }
                 else {
-                    game.rounds[roundIndex].south = missingCards[i];
+                    game.rounds[roundIndex].south = missingCard;
                 }
 
+                missingCards.erase(missingCards.begin() + bestMissingIndex);
                 corrections++;
             }
 
@@ -292,45 +314,12 @@ int ErrorResolver::resolveBriscola(Game& game) {
 
         Card originalBriscola = game.briscola;
 
-        /*
-        * If CV has a clearly dominant Briscola candidate,
-        * trust the visual evidence and do not let leader
-        * inconsistencies override it.
-        *
-        * Confidence values are normalized, therefore the
-        * strongest candidate normally has confidence = 1.
-        */
-        const auto& candidates =
-            game.prediction.briscolaDetected;
-
-        if (candidates.size() == 1 ||
-            candidates[1].confidence <
-                candidates[0].confidence * 0.5) {
-
-            game.briscola = candidates[0].card;
-
-            GameEngine::computeGame(game);
-
-            if (!sameCard(originalBriscola, game.briscola)) {
-                return 1;
-            }
-
-            return 0;
-        }
-
-
-        /*
-        * Ambiguous CV case:
-        * use game constraints to discriminate candidates.
-        */
         Card bestBriscola = game.briscola;
 
-        int bestLeaderIssues =
-            std::numeric_limits<int>::max();
+        int bestLeaderIssues = std::numeric_limits<int>::max();
 
         double bestConfidence = -1.0;
         bool bestPositionValid = false;
-        
 
 
         for (const auto& candidate : game.prediction.briscolaDetected) {
@@ -691,6 +680,15 @@ int ErrorResolver::resolveLeaderIssues(Game& game) {
 
                 Card currentCard = game.rounds[previousRoundIndex].north;
 
+                if (getCardConfidence(
+                        game,
+                        previousRoundIndex,
+                        Player::NORTH,
+                        currentCard
+                    ) >= LOCKED_CARD_CONFIDENCE) {
+                    continue;
+                }
+
                 if (sameCard(candidate.card, currentCard)) {
                     continue;
                 }
@@ -700,6 +698,15 @@ int ErrorResolver::resolveLeaderIssues(Game& game) {
                 Player otherPlayer;
 
                 if (!findCardPosition(game, candidate.card, otherRoundIndex, otherPlayer)) {
+                    continue;
+                }
+
+                if (getCardConfidence(
+                        game,
+                        otherRoundIndex,
+                        otherPlayer,
+                        candidate.card
+                    ) >= LOCKED_CARD_CONFIDENCE) {
                     continue;
                 }
 
@@ -778,6 +785,15 @@ int ErrorResolver::resolveLeaderIssues(Game& game) {
 
                 Card currentCard = game.rounds[previousRoundIndex].south;
 
+                if (getCardConfidence(
+                        game,
+                        previousRoundIndex,
+                        Player::SOUTH,
+                        currentCard
+                    ) >= LOCKED_CARD_CONFIDENCE) {
+                    continue;
+                }
+
                 if (sameCard(candidate.card, currentCard)) {
                     continue;
                 }
@@ -787,6 +803,15 @@ int ErrorResolver::resolveLeaderIssues(Game& game) {
                 Player otherPlayer;
 
                 if (!findCardPosition(game, candidate.card, otherRoundIndex, otherPlayer)) {
+                    continue;
+                }
+
+                if (getCardConfidence(
+                        game,
+                        otherRoundIndex,
+                        otherPlayer,
+                        candidate.card
+                    ) >= LOCKED_CARD_CONFIDENCE) {
                     continue;
                 }
 

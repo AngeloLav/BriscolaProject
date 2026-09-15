@@ -118,18 +118,6 @@ std::vector<CardDetected> getRankedCardsWithConfidence(const std::vector<CardObs
         result.push_back(cd);
     }
 
-    // Normalize only after all temporal observations have been combined.
-    double maxConfidence = 0.0;
-    for (const auto& candidate : result) {
-        maxConfidence = std::max(maxConfidence, candidate.confidence);
-    }
-
-    if (maxConfidence > 0.0) {
-        for (auto& candidate : result) {
-            candidate.confidence /= maxConfidence;
-        }
-    }
-
     std::sort(result.begin(), result.end(), [](const CardDetected& a, const CardDetected& b) {
         return a.confidence > b.confidence;
     });

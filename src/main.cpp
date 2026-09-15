@@ -35,6 +35,7 @@ constexpr int PLAYED_CARD_CLASS_ID = 1;
 constexpr int FRAME_SCANNED_NUMBER = 50;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
+constexpr bool ENABLE_ERROR_CORRECTION = true;
 
 void printCards(const std::vector<CardDetected>& candidates) {
     if (candidates.empty()) {
@@ -233,13 +234,6 @@ int main(int argc, char** argv) {
             // and ordering the detections, and counting points as it is described in the assignment
 
             for(const auto& detection : detections) {
-                
-                // Ignore classes that are not used by the pipeline.
-                if (detection.classId != BRISCOLA_CLASS_ID &&
-                    detection.classId != PLAYED_CARD_CLASS_ID) {
-                    continue;
-                }
-                
                 // Skip Briscola detections unless it's time to scan for it.
                 // I scan for briscola only more or less 3 times because are enough and avoid computation waste
                 if (detection.classId == BRISCOLA_CLASS_ID &&
@@ -275,18 +269,6 @@ int main(int argc, char** argv) {
                     }
                 }
 
-                // If both played cards are visible and the second card has already
-                // been detected, detections on the first player's side are discarded.
-                //
-                // IMPORTANT: do this BEFORE SIFT recognition because identifyCard()
-                // is one of the most expensive operations in the whole pipeline.
-                if (detection.classId == PLAYED_CARD_CLASS_ID &&
-                    secondCardDetected &&
-                    currentSide == firstCardSide &&
-                    playedCardBoxes.size() >= 2) {
-
-                    continue;
-                }
 
                 std::vector<CardDetected> recognizedCards =
                     recognizer.identifyCard(croppedcard);
@@ -381,10 +363,10 @@ int main(int argc, char** argv) {
                     // Assign new detections to the second player
                     // If both boxes are still visible, discard the first card's side.
                     // With only one box left, it is the second card moving towards the center.
-                    /*if (currentSide == firstCardSide &&
+                    if (currentSide == firstCardSide &&
                         playedCardBoxes.size() >= 2) {
                         continue;
-                    }*/
+                    }
 
                     if (firstCardSide == 0)
                     {
@@ -496,6 +478,34 @@ int main(int argc, char** argv) {
         allBriscolaDetections
     );
 
+    // Use the same confidence scale for every card in the game.
+    double maxCardConfidence = 0.0;
+    for (const auto& round : prediction.rounds) {
+        for (const auto& candidate : round.northDetected) {
+            maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
+        }
+        for (const auto& candidate : round.southDetected) {
+            maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
+        }
+    }
+    for (const auto& candidate : prediction.briscolaDetected) {
+        maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
+    }
+
+    if (maxCardConfidence > 0.0) {
+        for (auto& round : prediction.rounds) {
+            for (auto& candidate : round.northDetected) {
+                candidate.confidence /= maxCardConfidence;
+            }
+            for (auto& candidate : round.southDetected) {
+                candidate.confidence /= maxCardConfidence;
+            }
+        }
+        for (auto& candidate : prediction.briscolaDetected) {
+            candidate.confidence /= maxCardConfidence;
+        }
+    }
+
     std::cout << "\n================ GamePrediction ================" << std::endl;
     std::cout << "Rounds: " << prediction.rounds.size() << std::endl;
 
@@ -522,25 +532,30 @@ int main(int argc, char** argv) {
 
     ValidationResult before = Validator::validate(game);
 
-    int cardCorrections = ErrorResolver::resolveCardIssues(game);
+    int cardCorrections = 0;
     int briscolaCorrections = 0;
     int leaderCorrections = 0;
 
-    ValidationResult afterCards = Validator::validate(game);
+    if (ENABLE_ERROR_CORRECTION) {
 
-    if (afterCards.cardIssues.empty()) {
+        cardCorrections = ErrorResolver::resolveCardIssues(game);
 
-        briscolaCorrections =
-            ErrorResolver::resolveBriscola(game);
+        ValidationResult afterCards = Validator::validate(game);
 
-        leaderCorrections =
-            ErrorResolver::resolveLeaderIssues(game);
+        if (afterCards.cardIssues.empty()) {
 
-        briscolaCorrections +=
-            ErrorResolver::resolveBriscola(game);
+            briscolaCorrections =
+                ErrorResolver::resolveBriscola(game);
+
+            leaderCorrections =
+                ErrorResolver::resolveLeaderIssues(game);
+
+            briscolaCorrections +=
+                ErrorResolver::resolveBriscola(game);
+        }
+
+        briscolaCorrections += ErrorResolver::resolveBriscola(game);
     }
-
-    briscolaCorrections += ErrorResolver::resolveBriscola(game);
 
     ValidationResult finalValidation = Validator::validate(game);
 
