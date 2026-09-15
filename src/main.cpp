@@ -32,7 +32,7 @@ namespace {
 
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
-constexpr int FRAME_SCANNED_NUMBER = 50;
+constexpr int FRAME_SCANNED_NUMBER = 40;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 constexpr bool ENABLE_ERROR_CORRECTION = true;
