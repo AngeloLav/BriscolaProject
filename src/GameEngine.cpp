@@ -3,6 +3,8 @@
 
 #include <stdexcept>
 
+static constexpr double UNKNOWN_CARD_CONFIDENCE = 0.03;
+
 
 Game GameEngine::createGame(const GamePrediction& prediction) {
 
@@ -24,7 +26,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
 
         round.round = predictionRound.round;
 
-        if (!predictionRound.northDetected.empty()) {
+        if (!predictionRound.northDetected.empty() &&
+            predictionRound.northDetected[0].confidence >= UNKNOWN_CARD_CONFIDENCE) {
             round.north = predictionRound.northDetected[0].card;
         }
         else {
@@ -33,7 +36,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
             cardsComplete = false;
         }
 
-        if (!predictionRound.southDetected.empty()) {
+        if (!predictionRound.southDetected.empty() &&
+            predictionRound.southDetected[0].confidence >= UNKNOWN_CARD_CONFIDENCE) {
             round.south = predictionRound.southDetected[0].card;
         }
         else {

@@ -31,9 +31,10 @@ namespace {
 
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
-constexpr int FRAME_SCANNED_NUMBER = 50;
+constexpr int FRAME_SCANNED_NUMBER = 20;
 const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
+constexpr bool ENABLE_ERROR_CORRECTION = true;
 
 void printCards(const std::vector<CardDetected>& candidates) {
     if (candidates.empty()) {
@@ -462,6 +463,34 @@ int main(int argc, char** argv) {
         allBriscolaDetections
     );
 
+    // Use the same confidence scale for every card in the game.
+    double maxCardConfidence = 0.0;
+    for (const auto& round : prediction.rounds) {
+        for (const auto& candidate : round.northDetected) {
+            maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
+        }
+        for (const auto& candidate : round.southDetected) {
+            maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
+        }
+    }
+    for (const auto& candidate : prediction.briscolaDetected) {
+        maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
+    }
+
+    if (maxCardConfidence > 0.0) {
+        for (auto& round : prediction.rounds) {
+            for (auto& candidate : round.northDetected) {
+                candidate.confidence /= maxCardConfidence;
+            }
+            for (auto& candidate : round.southDetected) {
+                candidate.confidence /= maxCardConfidence;
+            }
+        }
+        for (auto& candidate : prediction.briscolaDetected) {
+            candidate.confidence /= maxCardConfidence;
+        }
+    }
+
     std::cout << "\n================ GamePrediction ================" << std::endl;
     std::cout << "Rounds: " << prediction.rounds.size() << std::endl;
 
@@ -488,25 +517,30 @@ int main(int argc, char** argv) {
 
     ValidationResult before = Validator::validate(game);
 
-    int cardCorrections = ErrorResolver::resolveCardIssues(game);
+    int cardCorrections = 0;
     int briscolaCorrections = 0;
     int leaderCorrections = 0;
 
-    ValidationResult afterCards = Validator::validate(game);
+    if (ENABLE_ERROR_CORRECTION) {
 
-    if (afterCards.cardIssues.empty()) {
+        cardCorrections = ErrorResolver::resolveCardIssues(game);
 
-        briscolaCorrections =
-            ErrorResolver::resolveBriscola(game);
+        ValidationResult afterCards = Validator::validate(game);
 
-        leaderCorrections =
-            ErrorResolver::resolveLeaderIssues(game);
+        if (afterCards.cardIssues.empty()) {
 
-        briscolaCorrections +=
-            ErrorResolver::resolveBriscola(game);
+            briscolaCorrections =
+                ErrorResolver::resolveBriscola(game);
+
+            leaderCorrections =
+                ErrorResolver::resolveLeaderIssues(game);
+
+            briscolaCorrections +=
+                ErrorResolver::resolveBriscola(game);
+        }
+
+        briscolaCorrections += ErrorResolver::resolveBriscola(game);
     }
-
-    briscolaCorrections += ErrorResolver::resolveBriscola(game);
 
     ValidationResult finalValidation = Validator::validate(game);
 
