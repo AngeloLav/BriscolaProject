@@ -170,6 +170,8 @@ int main(int argc, char** argv) {
 
         cv::Rect lastPlayedCardBox;
         cv::Rect trackedSecondCardBox;
+        cv::Rect firstCardLockedBox;
+        cv::Rect previousSecondCardBox;
 
         // Limita i frame presi, non so se poi volete calibrare meglio o togliere
         // Sample a fixed number of frames from each video during CV testing.
@@ -273,6 +275,9 @@ int main(int argc, char** argv) {
                     secondCardBox = newCardBox;
                     trackedSecondCardBox = newCardBox;
                     secondCardFrame = frameIndex;
+                    previousSecondCardBox = secondCardBox;
+
+                    firstCardLockedBox = oldCardBox;
                 }
             }
             
@@ -314,39 +319,62 @@ int main(int argc, char** argv) {
                     currentBox.y + currentBox.height / 2 < frame.rows / 2;
 
                 // After the switch, keep following the second card by position.
+                // If i have only one card, skip the bounding box that is at the same position as the first card
                 if (detection.classId == PLAYED_CARD_CLASS_ID &&
-                    secondCardDetected &&
-                    playedCardBoxes.size() >= 2) {
-                    cv::Rect closestBox;
-                    double minDistance = std::numeric_limits<double>::max();
+                    secondCardDetected)
+                {
+                    if (playedCardBoxes.size() == 1)
+                    {
+                        cv::Point detectedCenter(
+                            playedCardBoxes[0].x + playedCardBoxes[0].width / 2,
+                            playedCardBoxes[0].y + playedCardBoxes[0].height / 2
+                        );
 
-                    for (const auto& box : playedCardBoxes) {
-                        double distance =
-                            cv::norm(
-                                cv::Point(box.x, box.y) -
-                                cv::Point(
-                                    trackedSecondCardBox.x,
-                                    trackedSecondCardBox.y
-                                )
-                            );
+                        cv::Point oldCardCenter(
+                            firstCardLockedBox.x + firstCardLockedBox.width / 2,
+                            firstCardLockedBox.y + firstCardLockedBox.height / 2
+                        );
 
-                        if (distance < minDistance) {
-                            minDistance = distance;
-                            closestBox = box;
+                        double distanceFromOld =
+                            cv::norm(detectedCenter - oldCardCenter);
+
+                        // Ignore the old stationary card after the switch
+                        if (distanceFromOld > firstCardLockedBox.width * 0.3)
+                        {
+                            trackedSecondCardBox = playedCardBoxes[0];
                         }
                     }
+                    else
+                    {
+                        double minDistance = std::numeric_limits<double>::max();
+                        cv::Rect closest;
 
-                    if (currentBox != closestBox) {
-                        continue;
+                        cv::Point target(
+                            trackedSecondCardBox.x + trackedSecondCardBox.width / 2,
+                            trackedSecondCardBox.y + trackedSecondCardBox.height / 2
+                        );
+
+                        for (const auto& box : playedCardBoxes)
+                        {
+                            cv::Point center(
+                                box.x + box.width / 2,
+                                box.y + box.height / 2
+                            );
+
+                            double d = cv::norm(center - target);
+
+                            if (d < minDistance)
+                            {
+                                minDistance = d;
+                                closest = box;
+                            }
+                        }
+
+                        if (currentBox != closest)
+                            continue;
+
+                        trackedSecondCardBox = closest;
                     }
-
-                    trackedSecondCardBox = closestBox;
-                }
-
-                if (detection.classId == PLAYED_CARD_CLASS_ID &&
-                    secondCardDetected &&
-                    playedCardBoxes.size() == 1) {
-                    trackedSecondCardBox = playedCardBoxes[0];
                 }
 
 
