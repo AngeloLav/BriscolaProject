@@ -168,6 +168,9 @@ int main(int argc, char** argv) {
 
         int secondCardFrame = -1;
 
+        cv::Rect lastPlayedCardBox;
+        cv::Rect trackedSecondCardBox;
+
         // Limita i frame presi, non so se poi volete calibrare meglio o togliere
         // Sample a fixed number of frames from each video during CV testing.
         int totalFrames = static_cast<int>(
@@ -211,6 +214,67 @@ int main(int argc, char** argv) {
                     playedCardBoxes.push_back(box);
                 }
             }
+
+            if (!secondCardDetected && playedCardBoxes.size() == 1) {
+                lastPlayedCardBox = playedCardBoxes[0];
+            }
+
+            // The box farthest from the previous position is the new card.
+            if (!secondCardDetected &&
+                !firstCardBox.empty() &&
+                playedCardBoxes.size() >= 2) {
+                cv::Rect previousBox = lastPlayedCardBox.empty()
+                    ? firstCardBox
+                    : lastPlayedCardBox;
+                cv::Rect oldCardBox;
+                cv::Rect newCardBox;
+                double minDistance = std::numeric_limits<double>::max();
+                double maxDistance = -1.0;
+
+                for (const auto& box : playedCardBoxes) {
+                    double distance =
+                        cv::norm(
+                            cv::Point(box.x, box.y) -
+                            cv::Point(previousBox.x, previousBox.y)
+                        );
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        oldCardBox = box;
+                    }
+
+                    if (distance > maxDistance) {
+                        maxDistance = distance;
+                        newCardBox = box;
+                    }
+                }
+
+                bool newCardIsNorth =
+                    newCardBox.y + newCardBox.height / 2 < frame.rows / 2;
+                int newCardSide = newCardIsNorth ? 0 : 1;
+
+                // If both boxes are South and the new one is farther South,
+                // the first card was detected after crossing the centre.
+                bool wrongFirstSide =
+                    firstCardSide == 1 &&
+                    newCardSide == 1 &&
+                    newCardBox.y + newCardBox.height / 2 >
+                        oldCardBox.y + oldCardBox.height / 2;
+
+                if (maxDistance > SECOND_CARD_DISTANCE_THRESHOLD &&
+                    (newCardSide != firstCardSide || wrongFirstSide)) {
+                    if (wrongFirstSide) {
+                        std::swap(northDetections, southDetections);
+                        std::swap(firstNorthFrame, firstSouthFrame);
+                        firstCardSide = 1 - firstCardSide;
+                    }
+
+                    secondCardDetected = true;
+                    secondCardBox = newCardBox;
+                    trackedSecondCardBox = newCardBox;
+                    secondCardFrame = frameIndex;
+                }
+            }
             
             // NB. For the next that will work on this: each detection contains:
             // - detection.box --> bb in the original frame coordinates
@@ -248,25 +312,41 @@ int main(int argc, char** argv) {
                 cv::Rect currentBox = safebox;
                 bool isNorthZone =
                     currentBox.y + currentBox.height / 2 < frame.rows / 2;
-                int currentSide = isNorthZone ? 0 : 1;
 
-                // Require two played-card boxes in the same frame.
+                // After the switch, keep following the second card by position.
                 if (detection.classId == PLAYED_CARD_CLASS_ID &&
-                    !secondCardDetected &&
-                    !firstCardBox.empty() &&
-                    playedCardBoxes.size() >= 2 &&
-                    currentSide != firstCardSide) {
-                    double distance =
-                        cv::norm(
-                            cv::Point(currentBox.x, currentBox.y) -
-                            cv::Point(firstCardBox.x, firstCardBox.y)
-                        );
+                    secondCardDetected &&
+                    playedCardBoxes.size() >= 2) {
+                    cv::Rect closestBox;
+                    double minDistance = std::numeric_limits<double>::max();
 
-                    if (distance > SECOND_CARD_DISTANCE_THRESHOLD) {
-                        secondCardDetected = true;
-                        secondCardBox = currentBox;
-                        secondCardFrame = frameIndex;
+                    for (const auto& box : playedCardBoxes) {
+                        double distance =
+                            cv::norm(
+                                cv::Point(box.x, box.y) -
+                                cv::Point(
+                                    trackedSecondCardBox.x,
+                                    trackedSecondCardBox.y
+                                )
+                            );
+
+                        if (distance < minDistance) {
+                            minDistance = distance;
+                            closestBox = box;
+                        }
                     }
+
+                    if (currentBox != closestBox) {
+                        continue;
+                    }
+
+                    trackedSecondCardBox = closestBox;
+                }
+
+                if (detection.classId == PLAYED_CARD_CLASS_ID &&
+                    secondCardDetected &&
+                    playedCardBoxes.size() == 1) {
+                    trackedSecondCardBox = playedCardBoxes[0];
                 }
 
 
@@ -361,13 +441,6 @@ int main(int argc, char** argv) {
                 else
                 {
                     // Assign new detections to the second player
-                    // If both boxes are still visible, discard the first card's side.
-                    // With only one box left, it is the second card moving towards the center.
-                    if (currentSide == firstCardSide &&
-                        playedCardBoxes.size() >= 2) {
-                        continue;
-                    }
-
                     if (firstCardSide == 0)
                     {
                         southDetections.push_back({validCandidates});
