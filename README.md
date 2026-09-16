@@ -37,7 +37,7 @@ Run the application by providing the folder of a game. Video inside that folder 
 Example:
 
 ```bash
-./build/briscola data/game1
+./build/briscola data/game1/
 ```
 
 Expected layout:
@@ -50,22 +50,3 @@ data/
     └── game1.csv
 ```
 
-Press `ESC` to stop execution.
-
-## Development workflow
-
-Before starting work:
-
-```bash
-git pull
-```
-
-Commit and publish changes:
-
-```bash
-git add .
-git commit -m "Description of the changes"
-git push
-```
-
-__Build files, local videos and other generated resources are excluded through `.gitignore`.__
