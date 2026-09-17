@@ -37,7 +37,7 @@ constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
 constexpr int FRAME_SCANNED_NUMBER = 40;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
-constexpr bool ENABLE_ERROR_CORRECTION = true;
+constexpr bool ENABLE_ERROR_CORRECTION = false;
 
 void printCards(const std::vector<CardDetected>& candidates) {
     if (candidates.empty()) {
@@ -91,15 +91,17 @@ bool isValidRecognizedCard(const Card& card) {
     return card.value >= 1 && card.value <= 10 && type >= 0 && type <= 3;
 }
 
-} // namespace
+}
 
 
 int main(int argc, char** argv) {
     GameInput input;
+    // Load the game folder, the ground truth and the round videos.
     if (!loadGameInput(argc, argv, input)) {
         return 1;
     }
     
+    // Load the detector and recognizer used for every video.
     Detector detector("model/best.onnx");
     CardRecognizer recognizer("Briscola_Trentine");
     //cv::namedWindow("Briscola video", cv::WINDOW_NORMAL);
@@ -112,6 +114,7 @@ int main(int argc, char** argv) {
     int fallbackRoundNumber = 1;
 
     for (const auto& videoPath : input.videoFiles) {
+        // Extract the round number from the video name.
         int roundNumber = getRoundNumberFromVideoPath(videoPath);
         if (roundNumber == std::numeric_limits<int>::max()) {
             roundNumber = fallbackRoundNumber;
@@ -154,19 +157,16 @@ int main(int argc, char** argv) {
 
         CardTrackingState cardTracking;
 
-        // Limita i frame presi, non so se poi volete calibrare meglio o togliere
-        // Sample a fixed number of frames from each video during CV testing.
-        int totalFrames = static_cast<int>(
-            video.get(cv::CAP_PROP_FRAME_COUNT)
-        );
-
-        int firstTwoThirdsFrames = std::max(1, totalFrames * 2 / 3);
-        int frameStep = std::max(1, firstTwoThirdsFrames / FRAME_SCANNED_NUMBER);
+        // Sample a fixed number of frames from each video during CV testing to reduce computation time.
+        int totalFrames = static_cast<int>(video.get(cv::CAP_PROP_FRAME_COUNT));
+        // Process only the first three-quarters of the video beacuse in the last part there is 
+        int partOfFrames = std::max(1, totalFrames * 3 / 4);
+        int frameStep = std::max(1, partOfFrames / FRAME_SCANNED_NUMBER);
         int frameIndex = 0;
         int scannedFrameCount = 0;
 
 
-        while (frameIndex < firstTwoThirdsFrames &&
+        while (frameIndex < partOfFrames &&
        scannedFrameCount < FRAME_SCANNED_NUMBER && video.read(frame)) {
 
            
@@ -176,6 +176,7 @@ int main(int argc, char** argv) {
                 continue;
             }
 
+            // Detect the card regions present in this frame.
             std::vector<Detection> detections = detector.detect(frame);
             std::vector<CardDetected> frameNorthCandidates;
             std::vector<CardDetected> frameSouthCandidates;
@@ -183,8 +184,13 @@ int main(int argc, char** argv) {
 
             bool scanBriscola = scannedFrameCount % std::max(1, FRAME_SCANNED_NUMBER / 3) == 0;
 
+            // Find every valid played-card box in the current frame.
             std::vector<cv::Rect> playedCardBoxes = findPlayedCardBoxes(detections, frame);
+
+            // Remember the current position while only the first card is visible.
             updateLastPlayedCardBox(playedCardBoxes, cardTracking);
+
+            // Detect the second card and switch ownership when it appears.
             switchToSecondCard(
                 playedCardBoxes,
                 frame,
@@ -211,9 +217,7 @@ int main(int argc, char** argv) {
             //    by each crop with SIFT with the keypoints obtained by the labeled cards Trentine
             //    that we keep into another folder (they are on google drive of the assignement)
             // 5) Classifying the type of card based on the matching for each frame of the video
-
-            // Once this matching work, the last part for the last who will work here will be organizing
-            // and ordering the detections, and counting points as it is described in the assignment
+            // Then, organizeand order the detections, and counting points as it is described in the assignment
 
             for(const auto& detection : detections) {
                 // Skip Briscola detections unless it's time to scan for it.
@@ -228,8 +232,7 @@ int main(int argc, char** argv) {
                 cv::Mat croppedcard=frame(safebox);
 
                 cv::Rect currentBox = safebox;
-                bool isNorthZone =
-                    currentBox.y + currentBox.height / 2 < frame.rows / 2;
+                bool isNorthZone = currentBox.y + currentBox.height / 2 < frame.rows / 2;
 
                 // After the switch, keep following the second card by position.
                 // If i have only one card, skip the bounding box that is at the same position as the first card
@@ -241,6 +244,7 @@ int main(int argc, char** argv) {
                 }
 
 
+                // Recognize the card inside the detected box.
                 std::vector<CardDetected> recognizedCards =
                     recognizer.identifyCard(croppedcard);
 
@@ -283,6 +287,7 @@ int main(int argc, char** argv) {
                     continue;
                 }
 
+                // Store the recognized played-card candidates for the correct player.
                 storePlayedCardObservation(
                     validCandidates,
                     currentBox,
@@ -314,6 +319,7 @@ int main(int argc, char** argv) {
         RoundPrediction currentRoundPred;
         currentRoundPred.round = roundNumber; 
 
+        // Combine the observations from this round and rank the card candidates.
         currentRoundPred.northDetected = getRankedCardsWithConfidence(northDetections);
         currentRoundPred.southDetected = getRankedCardsWithConfidence(southDetections);
 
@@ -370,11 +376,13 @@ int main(int argc, char** argv) {
 
 
 
+    // Combine all briscola observations collected from the videos.
     prediction.briscolaDetected =
     getRankedCardsWithConfidence(
         allBriscolaDetections
     );
 
+    // Normalize all card confidences to a common scale.
     normalizeCardConfidences(prediction);
 
     std::cout << "\n================ GamePrediction ================" << std::endl;
@@ -399,8 +407,10 @@ int main(int argc, char** argv) {
     printCardCandidates("Briscola top 3", prediction.briscolaDetected);
     std::cout << "=======================================================" << std::endl;
 
+    // Create the game model from the predictions.
     Game game = GameEngine::createGame(prediction);
 
+    // Check the initial game before applying corrections.
     ValidationResult before = Validator::validate(game);
 
     int cardCorrections = 0;
@@ -409,25 +419,32 @@ int main(int argc, char** argv) {
 
     if (ENABLE_ERROR_CORRECTION) {
 
+        // Resolve duplicated and missing cards first.
         cardCorrections = ErrorResolver::resolveCardIssues(game);
 
+        // Check whether the card corrections left any card issues.
         ValidationResult afterCards = Validator::validate(game);
 
         if (afterCards.cardIssues.empty()) {
 
+            // Use game consistency to correct the briscola prediction.
             briscolaCorrections =
                 ErrorResolver::resolveBriscola(game);
 
+            // Align predicted leaders with the winners of previous rounds.
             leaderCorrections =
                 ErrorResolver::resolveLeaderIssues(game);
 
+            // Recheck the briscola after correcting the leaders.
             briscolaCorrections +=
                 ErrorResolver::resolveBriscola(game);
         }
 
+        // Perform the final briscola consistency pass.
         briscolaCorrections += ErrorResolver::resolveBriscola(game);
     }
 
+    // Validate the final game after all corrections.
     ValidationResult finalValidation = Validator::validate(game);
 
     std::cout << "\n================ CORRECTIONS ================" << std::endl;
@@ -445,11 +462,13 @@ int main(int argc, char** argv) {
               << std::endl;
     std::cout << "==============================================" << std::endl;
 
+    // Save the corrected game in a human-readable text file.
     OutputWriter::writeTxt(
         game,
         input.resultsFolder + input.gameName + "_output.txt"
     );
 
+    // Save the same game in CSV format.
     OutputWriter::writeCsv(
         game,
         input.resultsFolder + input.gameName + "_results.csv"
@@ -458,6 +477,7 @@ int main(int argc, char** argv) {
     std::cout << "\n================ METRICS ================" << std::endl;
     std::cout << "Ground truth: " << input.groundTruthPath << std::endl;
 
+    // Compare the corrected game with the ground truth.
     try {
         MetricsResult metrics =
             MetricsEvaluator::evaluate(
@@ -465,8 +485,10 @@ int main(int argc, char** argv) {
                 input.groundTruthPath
             );
 
+        // Print the computed metrics.
         MetricsEvaluator::printMetrics(metrics);
 
+        // Save the metrics in the results folder.
         MetricsEvaluator::writeMetrics(
             metrics,
             input.resultsFolder + input.gameName + "_metrics.txt"
