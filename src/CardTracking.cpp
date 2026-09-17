@@ -7,19 +7,19 @@
 
 namespace {
 
-constexpr int PLAYED_CARD_CLASS_ID = 1;
-const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
+constexpr double OLD_CARD_DISTANCE_RATIO = 0.3;
 
 } // namespace
 
 std::vector<cv::Rect> findPlayedCardBoxes(
     const std::vector<Detection>& detections,
-    const cv::Mat& frame
+    const cv::Mat& frame,
+    int playedCardClassId
 ) {
     // Count the played-card boxes in this frame before processing them. 2 boxes are needed to make the switch
     std::vector<cv::Rect> playedCardBoxes;
     for (const auto& detection : detections) {
-        if (detection.classId != PLAYED_CARD_CLASS_ID) {
+        if (detection.classId != playedCardClassId) {
             continue;
         }
 
@@ -46,6 +46,7 @@ void switchToSecondCard(
     const std::vector<cv::Rect>& playedCardBoxes,
     const cv::Mat& frame,
     int frameIndex,
+    double secondCardDistanceThreshold,
     CardTrackingState& tracking,
     std::vector<CardObservation>& northDetections,
     std::vector<CardObservation>& southDetections
@@ -90,7 +91,7 @@ void switchToSecondCard(
             newCardSide == 1 &&
             newCardBox.y + newCardBox.height / 2 > oldCardBox.y + oldCardBox.height / 2;
 
-        if (maxDistance > SECOND_CARD_DISTANCE_THRESHOLD &&
+        if (maxDistance > secondCardDistanceThreshold &&
             (newCardSide != tracking.firstCardSide || wrongFirstSide)) {
             if (wrongFirstSide) {
                 std::swap(northDetections, southDetections);
@@ -131,7 +132,7 @@ bool followSecondCard(
             cv::norm(detectedCenter - oldCardCenter);
 
         // Ignore the old stationary card after the switch
-        if (distanceFromOld > tracking.firstCardLockedBox.width * 0.3)
+        if (distanceFromOld > tracking.firstCardLockedBox.width * OLD_CARD_DISTANCE_RATIO)
         {
             tracking.trackedSecondCardBox = playedCardBoxes[0];
         }

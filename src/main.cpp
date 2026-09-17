@@ -33,11 +33,30 @@
 
 namespace {
 
-constexpr int BRISCOLA_CLASS_ID = 0;
-constexpr int PLAYED_CARD_CLASS_ID = 1;
-constexpr int FRAME_SCANNED_NUMBER = 40;
-constexpr bool PRINT_FRAME_DETECTIONS = true;
-constexpr bool ENABLE_ERROR_CORRECTION = false;
+// Class IDs returned by the object detector.
+constexpr int BRISCOLA_CLASS_ID = 0; // Briscola-Cards.
+constexpr int PLAYED_CARD_CLASS_ID = 1; // Played-Card.
+
+// Main parameters for the video scan.
+constexpr int FRAME_SCANNED_NUMBER = 50; // Number of sampled frames per round.
+constexpr int BRISCOLA_SCAN_DIVISOR = 3; // Approximate number of briscola scans.
+constexpr int PROCESSED_FRAME_NUMERATOR = 3; 
+constexpr int PROCESSED_FRAME_DENOMINATOR = 4; // Process the first 3/4 of each video.
+constexpr int MIN_FRAME_COUNT = 1; // Keep frame steps and ranges positive.
+constexpr int FIRST_ROUND_NUMBER = 1; // First fallback round number.
+constexpr double SECOND_CARD_DISTANCE_THRESHOLD = 100.0; // Minimum movement in pixels for the switch.
+
+// Maximum number of candidates to print for each frame in the console output.
+constexpr size_t MAX_CANDIDATES_TO_PRINT = 3;
+
+// Confidence values assigned to the detected leader.
+constexpr double LEADER_CONFIDENCE = 0.9;
+constexpr double UNKNOWN_LEADER_CONFIDENCE = 0.5;
+
+constexpr bool PRINT_FRAME_DETECTIONS = true; // Print candidates for every sampled frame.
+constexpr bool ENABLE_ERROR_CORRECTION = true; // Apply the optional prediction corrections.
+
+
 
 void printCards(const std::vector<CardDetected>& candidates) {
     if (candidates.empty()) {
@@ -45,7 +64,7 @@ void printCards(const std::vector<CardDetected>& candidates) {
         return;
     }
 
-    size_t candidatesToPrint = std::min<size_t>(3, candidates.size());
+    size_t candidatesToPrint = std::min<size_t>(MAX_CANDIDATES_TO_PRINT, candidates.size());
 
     for (size_t i = 0; i < candidatesToPrint; i++) {
         const auto& candidate = candidates[i];
@@ -111,7 +130,7 @@ int main(int argc, char** argv) {
     
     std::vector<CardObservation> allBriscolaDetections;
 
-    int fallbackRoundNumber = 1;
+    int fallbackRoundNumber = FIRST_ROUND_NUMBER;
 
     for (const auto& videoPath : input.videoFiles) {
         // Extract the round number from the video name.
@@ -160,8 +179,11 @@ int main(int argc, char** argv) {
         // Sample a fixed number of frames from each video during CV testing to reduce computation time.
         int totalFrames = static_cast<int>(video.get(cv::CAP_PROP_FRAME_COUNT));
         // Process only the first three-quarters of the video beacuse in the last part there is 
-        int partOfFrames = std::max(1, totalFrames * 3 / 4);
-        int frameStep = std::max(1, partOfFrames / FRAME_SCANNED_NUMBER);
+        int partOfFrames = std::max(
+            MIN_FRAME_COUNT,
+            totalFrames * PROCESSED_FRAME_NUMERATOR / PROCESSED_FRAME_DENOMINATOR
+        );
+        int frameStep = std::max(MIN_FRAME_COUNT, partOfFrames / FRAME_SCANNED_NUMBER);
         int frameIndex = 0;
         int scannedFrameCount = 0;
 
@@ -182,10 +204,12 @@ int main(int argc, char** argv) {
             std::vector<CardDetected> frameSouthCandidates;
             std::vector<CardDetected> frameBriscolaCandidates;
 
-            bool scanBriscola = scannedFrameCount % std::max(1, FRAME_SCANNED_NUMBER / 3) == 0;
+            bool scanBriscola =
+                scannedFrameCount % std::max(MIN_FRAME_COUNT, FRAME_SCANNED_NUMBER / BRISCOLA_SCAN_DIVISOR) == 0;
 
             // Find every valid played-card box in the current frame.
-            std::vector<cv::Rect> playedCardBoxes = findPlayedCardBoxes(detections, frame);
+            std::vector<cv::Rect> playedCardBoxes =
+                findPlayedCardBoxes(detections, frame, PLAYED_CARD_CLASS_ID);
 
             // Remember the current position while only the first card is visible.
             updateLastPlayedCardBox(playedCardBoxes, cardTracking);
@@ -195,6 +219,7 @@ int main(int argc, char** argv) {
                 playedCardBoxes,
                 frame,
                 frameIndex,
+                SECOND_CARD_DISTANCE_THRESHOLD,
                 cardTracking,
                 northDetections,
                 southDetections
@@ -357,14 +382,14 @@ int main(int argc, char** argv) {
         PlayerDetected leaderPred;
         if(cardTracking.firstNorthFrame != -1 && (cardTracking.firstSouthFrame == -1 || cardTracking.firstNorthFrame < cardTracking.firstSouthFrame)) {
             leaderPred.player = Player::NORTH;
-            leaderPred.confidence = 0.9; 
+            leaderPred.confidence = LEADER_CONFIDENCE;
         } else if(cardTracking.firstSouthFrame != -1 && (cardTracking.firstNorthFrame == -1 || cardTracking.firstSouthFrame < cardTracking.firstNorthFrame)) {
             leaderPred.player = Player::SOUTH;
-            leaderPred.confidence = 0.9; 
+            leaderPred.confidence = LEADER_CONFIDENCE;
         } else {
             //if we can't determine the leader, we set a default
             leaderPred.player = Player::NORTH;
-            leaderPred.confidence = 0.5; 
+            leaderPred.confidence = UNKNOWN_LEADER_CONFIDENCE;
         }
         currentRoundPred.leaderDetected.push_back(leaderPred);
         prediction.rounds.push_back(currentRoundPred);

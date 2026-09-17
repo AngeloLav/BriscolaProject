@@ -34,7 +34,8 @@ struct CardTrackingState {
 // Collects the played-card boxes detected in the current frame.
 std::vector<cv::Rect> findPlayedCardBoxes(
     const std::vector<Detection>& detections,
-    const cv::Mat& frame
+    const cv::Mat& frame,
+    int playedCardClassId
 );
 
 // Keeps the position of the only visible played card until the switch occurs.
@@ -51,6 +52,7 @@ void switchToSecondCard(
     const std::vector<cv::Rect>& playedCardBoxes,
     const cv::Mat& frame,
     int frameIndex,
+    double secondCardDistanceThreshold,
     CardTrackingState& tracking,
     std::vector<CardObservation>& northDetections,
     std::vector<CardObservation>& southDetections
