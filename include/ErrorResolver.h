@@ -7,6 +7,15 @@
 #include "Validator.h"
 
 
+/*
+ * Applies the consistency checks that can correct recognition errors after
+ * the video analysis is complete. The resolver works on the final Game, while
+ * the original candidates remain available through Game::prediction.
+ *
+ * Each method returns the number of changes it made. A value of zero means
+ * that no safe correction was found, not necessarily that every prediction
+ * is correct.
+ */
 class ErrorResolver {
 
 public:

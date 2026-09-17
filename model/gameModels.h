@@ -7,6 +7,7 @@
 #include <string>
 #include <opencv2/opencv.hpp>
 
+// The four suits used by the Trentine Briscola deck.
 enum class CardType {
     COINS,
     CLUBS,
@@ -14,7 +15,7 @@ enum class CardType {
     SPADES
 };
 
-// players identified by their position
+// Players identified by their position at the table.
 enum class Player {
     NORTH,
     SOUTH
@@ -22,7 +23,7 @@ enum class Player {
 
 struct Card {
     CardType type;
-    int value;      // 1, 2, 3, ... 10
+    int value;      // 1, 2, 3, ... 10; 0 means that the card is unknown.
 }; 
 
 // Represents a card detected by a computer vision model, along with the confidence of the detection
@@ -37,7 +38,8 @@ struct CardDetected {
     int frameIndex;
 };
 
-// Represents a possible observation of a card
+// Represents a possible observation of a card. A single observation can keep
+// more than one candidate because recognition may be uncertain in one frame.
 struct CardObservation {
     std::vector<CardDetected> candidates;
 };
@@ -48,7 +50,8 @@ struct PlayerDetected {
     double confidence;
 };
 
-// prediction for a round (single video), vectors conteins the top candidates for each card and for the leader
+// Prediction for a round (single video). The vectors contain ranked candidates
+// for both cards and the player who led the round.
 struct RoundPrediction {
     int round;
 
@@ -78,7 +81,9 @@ struct RoundResult {
     int points;     // points won by the winner in this round
 };
 
-// Final result of the game after possible corrections and validations
+// Final result of the game after possible corrections and validations.
+// The original prediction is kept so correction methods can still inspect
+// alternatives instead of losing the information from the recognizer.
 struct Game {
     GamePrediction prediction;
 

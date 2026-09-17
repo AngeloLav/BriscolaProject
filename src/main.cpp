@@ -223,7 +223,7 @@ int main(int argc, char** argv) {
                 southDetections
             );
             
-            // NB. For the next that will work on this: each detection contains:
+            // each detection contains:
             // - detection.box --> bb in the original frame coordinates
             // - detection.confidence --> confidence score
             // - detecion.classId --> detected class

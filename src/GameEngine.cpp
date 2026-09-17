@@ -54,7 +54,7 @@ Game GameEngine::createGame(const GamePrediction& prediction, bool allowLowConfi
             round.leader = predictionRound.leaderDetected[0].player;
         }
         else {
-            // Temporary value, resolved in block 3
+            // Temporary value
             round.leader = Player::NORTH;
         }
 

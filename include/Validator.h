@@ -55,9 +55,13 @@ struct ValidationResult {
 };
 
 
+// Checks the deck and the sequence of leaders after the initial game is built
+// and after each correction step.
 class Validator {
 
     public:
+        // Reports missing or duplicated cards and inconsistent consecutive
+        // winner/leader pairs.
         static ValidationResult validate(const Game& game);
 
         // check if there's the briscola type in the last three rounds, and if the loser of round 17 is the one who receives it

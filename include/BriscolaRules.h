@@ -5,6 +5,7 @@
 
 #include "gameModels.h"
 
+// Centralizes the rules used to decide the winner and the points of a round.
 class BriscolaRules {
     public:
 
