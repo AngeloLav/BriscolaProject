@@ -427,16 +427,8 @@ int main(int argc, char** argv) {
     // Create the game model from the predictions.
     Game game = GameEngine::createGame(prediction, !ENABLE_ERROR_CORRECTION);
 
-    bool cardsComplete = game.briscola.value != 0;
-    for (const auto& round : game.rounds) {
-        if (round.north.value == 0 || round.south.value == 0) {
-            cardsComplete = false;
-            break;
-        }
-    }
-
-    // Compute the game directly when error correction is disabled and all cards are known.
-    if (!ENABLE_ERROR_CORRECTION && cardsComplete) {
+    // Compute the game directly when error correction is disabled.
+    if (!ENABLE_ERROR_CORRECTION && game.briscola.value != 0) {
         GameEngine::computeGame(game);
     }
 

@@ -47,6 +47,11 @@ static void writeCardCsv(std::ofstream& output, const Card& card) {
            << cardTypeToString(card.type);
 }
 
+static bool hasCompleteCards(const RoundResult& round) {
+
+    return round.north.value != 0 && round.south.value != 0;
+}
+
 
 void OutputWriter::writeTxt(const Game& game, const std::string& filePath) {
 
@@ -85,11 +90,17 @@ void OutputWriter::writeTxt(const Game& game, const std::string& filePath) {
         output << "Leader : "
                << playerToString(round.leader) << "\n";
 
-        output << "Winner : "
-               << playerToString(round.winner) << "\n";
+        output << "Winner : ";
+        if (hasCompleteCards(round)) {
+            output << playerToString(round.winner);
+        }
+        output << "\n";
 
-        output << "Points : "
-               << round.points << "\n";
+        output << "Points : ";
+        if (hasCompleteCards(round)) {
+            output << round.points;
+        }
+        output << "\n";
     }
 
 
@@ -136,8 +147,11 @@ void OutputWriter::writeCsv(const Game& game, const std::string& filePath) {
         output << ",";
         writeCardCsv(output, game.briscola);
         output << ","
-               << playerToString(round.leader) << ","
-               << playerToString(round.winner) << ","
-               << round.points << "\n";
+               << playerToString(round.leader) << ",";
+        if (hasCompleteCards(round)) {
+            output << playerToString(round.winner) << ","
+                   << round.points;
+        }
+        output << "\n";
     }
 }

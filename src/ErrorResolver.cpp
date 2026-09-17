@@ -372,13 +372,14 @@ int ErrorResolver::resolveBriscola(Game& game) {
             /*
              * Selection priority:
              * 1. fewer leader issues
-             * 2. valid briscola position
-             * 3. higher recognition confidence
+             * 2. higher recognition confidence
+             * 3. valid briscola position when confidence is equal
              */
             if (leaderIssues < bestLeaderIssues ||
-                (leaderIssues == bestLeaderIssues && positionValid && !bestPositionValid) ||
-                (leaderIssues == bestLeaderIssues && positionValid == bestPositionValid &&
-                 candidate.confidence > bestConfidence)) {
+                (leaderIssues == bestLeaderIssues &&
+                 (candidate.confidence > bestConfidence ||
+                  (candidate.confidence == bestConfidence &&
+                   positionValid && !bestPositionValid)))) {
 
                 bestLeaderIssues = leaderIssues;
                 bestConfidence = candidate.confidence;

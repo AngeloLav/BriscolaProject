@@ -76,6 +76,10 @@ void GameEngine::computeGame(Game& game) {
 
     // Compute winners and points for each round, and accumulate total scores
     for (auto& round : game.rounds) {
+        if (round.north.value == 0 || round.south.value == 0) {
+            continue;
+        }
+
         round.winner =
             BriscolaRules::findWinner(
                 round.north,
