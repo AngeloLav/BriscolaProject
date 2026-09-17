@@ -1,5 +1,8 @@
 // Luca Ferraro
 
+#ifndef BRISCOLA_RULES_H
+#define BRISCOLA_RULES_H
+
 #include "gameModels.h"
 
 class BriscolaRules {
@@ -23,3 +26,5 @@ class BriscolaRules {
         );
 
 };
+
+#endif

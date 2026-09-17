@@ -1,5 +1,8 @@
 // Luca Ferraro
 
+#ifndef CARD_TRACKING_H
+#define CARD_TRACKING_H
+
 #include <vector>
 
 #include <opencv2/core.hpp>
@@ -72,3 +75,5 @@ void storePlayedCardObservation(
     std::vector<CardDetected>& frameNorthCandidates,
     std::vector<CardDetected>& frameSouthCandidates
 );
+
+#endif

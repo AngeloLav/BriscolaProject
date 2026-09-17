@@ -1,5 +1,8 @@
 // Luca Ferraro
 
+#ifndef GAME_ENGINE_H
+#define GAME_ENGINE_H
+
 #include "gameModels.h"
 
 class GameEngine {
@@ -12,3 +15,5 @@ class GameEngine {
         // Computes winners, points and total scores
         static void computeGame(Game& game);
 };
+
+#endif

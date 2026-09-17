@@ -1,5 +1,8 @@
 // Luca Ferraro
 
+#ifndef ERROR_RESOLVER_H
+#define ERROR_RESOLVER_H
+
 #include "gameModels.h"
 #include "Validator.h"
 
@@ -90,3 +93,5 @@ public:
     static int resolveLeaderIssues(Game& game);
 
 };
+
+#endif

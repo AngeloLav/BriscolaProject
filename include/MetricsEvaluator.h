@@ -1,5 +1,8 @@
 // Luca Ferraro
 
+#ifndef METRICS_EVALUATOR_H
+#define METRICS_EVALUATOR_H
+
 #include "gameModels.h"
 #include <string>
 
@@ -23,3 +26,5 @@ public:
 
     static void writeMetrics(const MetricsResult& metrics, const std::string& filePath);
 };
+
+#endif

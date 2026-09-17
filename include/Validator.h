@@ -1,5 +1,8 @@
 // Luca Ferraro
 
+#ifndef VALIDATOR_H
+#define VALIDATOR_H
+
 #include <string>
 #include <vector>
 #include "gameModels.h"
@@ -60,3 +63,5 @@ class Validator {
         // check if there's the briscola type in the last three rounds, and if the loser of round 17 is the one who receives it
         static bool isBriscolaPositionValid(const Game& game);
 };
+
+#endif
