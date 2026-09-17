@@ -10,4 +10,6 @@ double calculateCardConfidence(
     const std::vector<CardDetected>& detections
 );
 
+void normalizeCardConfidences(GamePrediction& prediction);
+
 #endif

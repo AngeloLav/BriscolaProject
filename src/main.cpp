@@ -23,6 +23,7 @@
 #include "OutputWriter.h"
 #include "MetricsEvaluator.h"
 #include "CardTracking.h"
+#include "confidence.h"
 #include "detector.hpp"
 #include "recognizer.hpp"
 #include "../model/gameModels.h"
@@ -182,8 +183,7 @@ int main(int argc, char** argv) {
 
             bool scanBriscola = scannedFrameCount % std::max(1, FRAME_SCANNED_NUMBER / 3) == 0;
 
-            std::vector<cv::Rect> playedCardBoxes =
-                findPlayedCardBoxes(detections, frame);
+            std::vector<cv::Rect> playedCardBoxes = findPlayedCardBoxes(detections, frame);
             updateLastPlayedCardBox(playedCardBoxes, cardTracking);
             switchToSecondCard(
                 playedCardBoxes,
@@ -375,33 +375,7 @@ int main(int argc, char** argv) {
         allBriscolaDetections
     );
 
-    // Use the same confidence scale for every card in the game.
-    double maxCardConfidence = 0.0;
-    for (const auto& round : prediction.rounds) {
-        for (const auto& candidate : round.northDetected) {
-            maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
-        }
-        for (const auto& candidate : round.southDetected) {
-            maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
-        }
-    }
-    for (const auto& candidate : prediction.briscolaDetected) {
-        maxCardConfidence = std::max(maxCardConfidence, candidate.confidence);
-    }
-
-    if (maxCardConfidence > 0.0) {
-        for (auto& round : prediction.rounds) {
-            for (auto& candidate : round.northDetected) {
-                candidate.confidence /= maxCardConfidence;
-            }
-            for (auto& candidate : round.southDetected) {
-                candidate.confidence /= maxCardConfidence;
-            }
-        }
-        for (auto& candidate : prediction.briscolaDetected) {
-            candidate.confidence /= maxCardConfidence;
-        }
-    }
+    normalizeCardConfidences(prediction);
 
     std::cout << "\n================ GamePrediction ================" << std::endl;
     std::cout << "Rounds: " << prediction.rounds.size() << std::endl;
