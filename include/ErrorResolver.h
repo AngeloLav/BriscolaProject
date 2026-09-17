@@ -52,9 +52,9 @@ public:
      * the game and counting winner-leader inconsistencies.
      *
      * The candidate producing the fewest leader issues is preferred. If multiple
-     * candidates give the same result, recognition confidence is used as the tie-breaker.
-     * The position of the briscola among the last three cards is used only when
-     * candidates have the same confidence.
+     * candidates give the same result, the resolver checks whether the exact briscola
+     * appears among the last three cards of the player who should have received it.
+     * Recognition confidence is then used as the final tie-breaker.
      *
      * If the briscola detection is UNKNOWN, all four possible suits are tested.
      * The suit producing the fewest leader issues is preferred, while its presence
