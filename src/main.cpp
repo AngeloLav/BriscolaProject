@@ -400,7 +400,12 @@ int main(int argc, char** argv) {
     std::cout << "=======================================================" << std::endl;
 
     // Create the game model from the predictions.
-    Game game = GameEngine::createGame(prediction);
+    Game game = GameEngine::createGame(prediction, !ENABLE_ERROR_CORRECTION);
+
+    // Compute the game directly when error correction is disabled.
+    if (!ENABLE_ERROR_CORRECTION && game.briscola.value != 0) {
+        GameEngine::computeGame(game);
+    }
 
     // Check the initial game before applying corrections.
     ValidationResult before = Validator::validate(game);

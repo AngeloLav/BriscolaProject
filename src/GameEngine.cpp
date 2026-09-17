@@ -8,7 +8,7 @@
 static constexpr double UNKNOWN_CARD_CONFIDENCE = 0.03;
 
 
-Game GameEngine::createGame(const GamePrediction& prediction) {
+Game GameEngine::createGame(const GamePrediction& prediction, bool allowLowConfidenceCards) {
 
     Game game{};
 
@@ -29,7 +29,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
         round.round = predictionRound.round;
 
         if (!predictionRound.northDetected.empty() &&
-            predictionRound.northDetected[0].confidence >= UNKNOWN_CARD_CONFIDENCE) {
+            (allowLowConfidenceCards ||
+             predictionRound.northDetected[0].confidence >= UNKNOWN_CARD_CONFIDENCE)) {
             round.north = predictionRound.northDetected[0].card;
         }
         else {
@@ -39,7 +40,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
         }
 
         if (!predictionRound.southDetected.empty() &&
-            predictionRound.southDetected[0].confidence >= UNKNOWN_CARD_CONFIDENCE) {
+            (allowLowConfidenceCards ||
+             predictionRound.southDetected[0].confidence >= UNKNOWN_CARD_CONFIDENCE)) {
             round.south = predictionRound.southDetected[0].card;
         }
         else {
@@ -59,7 +61,8 @@ Game GameEngine::createGame(const GamePrediction& prediction) {
         game.rounds.push_back(round);
     }
 
-    if (cardsComplete && game.briscola.value != 0) {
+    if (!allowLowConfidenceCards &&
+        cardsComplete && game.briscola.value != 0) {
         computeGame(game);
     }
 
