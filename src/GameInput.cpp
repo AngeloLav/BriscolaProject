@@ -96,8 +96,9 @@ bool loadGameInput(int argc, char** argv, GameInput& input) {
 
     std::cout << "Video files found: " << input.videoFiles.size() << std::endl;
     if (input.videoFiles.size() != 20) {
-        std::cerr << "Warning: expected 20 round videos, found "
+        std::cerr << "Error: expected 20 round videos, found "
                   << input.videoFiles.size() << std::endl;
+        return false;
     }
 
     return true;

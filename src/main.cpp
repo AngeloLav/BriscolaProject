@@ -1,4 +1,4 @@
-
+// Main don't have an author, everyone just have called their functions and add what they need.
 
 // Standard include
 #include <algorithm>
