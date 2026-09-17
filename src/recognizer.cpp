@@ -184,6 +184,19 @@ std::vector<CardDetected> CardRecognizer::identifyCard(
             if (best.distance <
                 0.75f * second.distance) {
 
+                // Extra weight for keypoints near the corners of the card (where there are the numbers in some cards).
+                double cornerWeight = 1.0;
+
+                cv::Point2f p = cropKeypoints[best.queryIdx].pt;
+
+                if (p.y < grayCrop.rows * 0.2 ||
+                    p.y > grayCrop.rows * 0.8)
+                {
+                    cornerWeight = 2.0;
+                }
+
+                ratioQuality += cornerWeight *
+                    (1.0 - best.distance / second.distance);
 
                 srcPoints.push_back(
                     cropKeypoints[
@@ -312,7 +325,7 @@ std::vector<CardDetected> CardRecognizer::identifyCard(
                 preliminaryCandidate.srcPoints,
                 preliminaryCandidate.dstPoints,
                 cv::RANSAC,
-                5.0,
+                4.0,
                 inlierMask
             );
 
@@ -329,8 +342,8 @@ std::vector<CardDetected> CardRecognizer::identifyCard(
 
 
         // Same acceptance logic as before:
-        // require more than 4 RANSAC inliers.
-        if (inlierCount <= 4) {
+        // require more than 5 RANSAC inliers.
+        if (inlierCount <= 5) {
             continue;
         }
 
