@@ -17,12 +17,12 @@ include_directories(
 add_executable(
     briscola
     src/main.cpp
+    src/CardTracking.cpp
     src/GameInput.cpp
     src/detector.cpp
     src/recognizer.cpp
     src/analyzer.cpp
     src/confidence.cpp
-    src/JsonReader.cpp
     src/GameEngine.cpp
     src/BriscolaRules.cpp
     src/Validator.cpp

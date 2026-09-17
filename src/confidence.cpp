@@ -1,3 +1,5 @@
+// Luca Ferraro
+
 #include "confidence.h"
 
 // Returns the average SIFT score for a card across the observations.

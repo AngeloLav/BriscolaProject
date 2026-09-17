@@ -1,8 +1,4 @@
-#include "detector.hpp"
-#include "recognizer.hpp"
-#include "../model/gameModels.h"
-#include "analyzer.hpp"
-#include "GameInput.h"
+
 
 // Standard include
 #include <algorithm>
@@ -26,6 +22,12 @@
 #include "ErrorResolver.h"
 #include "OutputWriter.h"
 #include "MetricsEvaluator.h"
+#include "CardTracking.h"
+#include "detector.hpp"
+#include "recognizer.hpp"
+#include "../model/gameModels.h"
+#include "analyzer.hpp"
+#include "GameInput.h"
 
 
 namespace {
@@ -33,7 +35,6 @@ namespace {
 constexpr int BRISCOLA_CLASS_ID = 0;
 constexpr int PLAYED_CARD_CLASS_ID = 1;
 constexpr int FRAME_SCANNED_NUMBER = 40;
-const double SECOND_CARD_DISTANCE_THRESHOLD = 100;
 constexpr bool PRINT_FRAME_DETECTIONS = true;
 constexpr bool ENABLE_ERROR_CORRECTION = true;
 
@@ -150,28 +151,7 @@ int main(int argc, char** argv) {
         std::vector<CardObservation> northDetections;
         std::vector<CardObservation> southDetections;
 
-        // First valid detection determines which player starts the round.
-        int firstNorthFrame = -1;
-        int firstSouthFrame = -1;
-
-        // Once a second independent box is found, detections are assigned
-        // to the other player and the first card is no longer updated.
-        bool secondCardDetected = false;
-
-        cv::Rect firstCardBox;
-
-        int firstCardFrame = -1;
-
-        int firstCardSide = -1;
-
-        cv::Rect secondCardBox;
-
-        int secondCardFrame = -1;
-
-        cv::Rect lastPlayedCardBox;
-        cv::Rect trackedSecondCardBox;
-        cv::Rect firstCardLockedBox;
-        cv::Rect previousSecondCardBox;
+        CardTrackingState cardTracking;
 
         // Limita i frame presi, non so se poi volete calibrare meglio o togliere
         // Sample a fixed number of frames from each video during CV testing.
@@ -202,84 +182,17 @@ int main(int argc, char** argv) {
 
             bool scanBriscola = scannedFrameCount % std::max(1, FRAME_SCANNED_NUMBER / 3) == 0;
 
-            // Count the played-card boxes in this frame before processing them. 2 boxes are needed to make the switch
-            std::vector<cv::Rect> playedCardBoxes;
-            for (const auto& detection : detections) {
-                if (detection.classId != PLAYED_CARD_CLASS_ID) {
-                    continue;
-                }
-
-                cv::Rect box =
-                    detection.box & cv::Rect(0, 0, frame.cols, frame.rows);
-
-                if (box.width > 0 && box.height > 0) {
-                    playedCardBoxes.push_back(box);
-                }
-            }
-
-            if (!secondCardDetected && playedCardBoxes.size() == 1) {
-                lastPlayedCardBox = playedCardBoxes[0];
-            }
-
-            // The box farthest from the previous position is the new card.
-            if (!secondCardDetected &&
-                !firstCardBox.empty() &&
-                playedCardBoxes.size() >= 2) {
-                cv::Rect previousBox = lastPlayedCardBox.empty()
-                    ? firstCardBox
-                    : lastPlayedCardBox;
-                cv::Rect oldCardBox;
-                cv::Rect newCardBox;
-                double minDistance = std::numeric_limits<double>::max();
-                double maxDistance = -1.0;
-
-                for (const auto& box : playedCardBoxes) {
-                    double distance =
-                        cv::norm(
-                            cv::Point(box.x, box.y) -
-                            cv::Point(previousBox.x, previousBox.y)
-                        );
-
-                    if (distance < minDistance) {
-                        minDistance = distance;
-                        oldCardBox = box;
-                    }
-
-                    if (distance > maxDistance) {
-                        maxDistance = distance;
-                        newCardBox = box;
-                    }
-                }
-
-                bool newCardIsNorth =
-                    newCardBox.y + newCardBox.height / 2 < frame.rows / 2;
-                int newCardSide = newCardIsNorth ? 0 : 1;
-
-                // If both boxes are South and the new one is farther South,
-                // the first card was detected after crossing the centre.
-                bool wrongFirstSide =
-                    firstCardSide == 1 &&
-                    newCardSide == 1 &&
-                    newCardBox.y + newCardBox.height / 2 >
-                        oldCardBox.y + oldCardBox.height / 2;
-
-                if (maxDistance > SECOND_CARD_DISTANCE_THRESHOLD &&
-                    (newCardSide != firstCardSide || wrongFirstSide)) {
-                    if (wrongFirstSide) {
-                        std::swap(northDetections, southDetections);
-                        std::swap(firstNorthFrame, firstSouthFrame);
-                        firstCardSide = 1 - firstCardSide;
-                    }
-
-                    secondCardDetected = true;
-                    secondCardBox = newCardBox;
-                    trackedSecondCardBox = newCardBox;
-                    secondCardFrame = frameIndex;
-                    previousSecondCardBox = secondCardBox;
-
-                    firstCardLockedBox = oldCardBox;
-                }
-            }
+            std::vector<cv::Rect> playedCardBoxes =
+                findPlayedCardBoxes(detections, frame);
+            updateLastPlayedCardBox(playedCardBoxes, cardTracking);
+            switchToSecondCard(
+                playedCardBoxes,
+                frame,
+                frameIndex,
+                cardTracking,
+                northDetections,
+                southDetections
+            );
             
             // NB. For the next that will work on this: each detection contains:
             // - detection.box --> bb in the original frame coordinates
@@ -321,60 +234,10 @@ int main(int argc, char** argv) {
                 // After the switch, keep following the second card by position.
                 // If i have only one card, skip the bounding box that is at the same position as the first card
                 if (detection.classId == PLAYED_CARD_CLASS_ID &&
-                    secondCardDetected)
+                    cardTracking.secondCardDetected)
                 {
-                    if (playedCardBoxes.size() == 1)
-                    {
-                        cv::Point detectedCenter(
-                            playedCardBoxes[0].x + playedCardBoxes[0].width / 2,
-                            playedCardBoxes[0].y + playedCardBoxes[0].height / 2
-                        );
-
-                        cv::Point oldCardCenter(
-                            firstCardLockedBox.x + firstCardLockedBox.width / 2,
-                            firstCardLockedBox.y + firstCardLockedBox.height / 2
-                        );
-
-                        double distanceFromOld =
-                            cv::norm(detectedCenter - oldCardCenter);
-
-                        // Ignore the old stationary card after the switch
-                        if (distanceFromOld > firstCardLockedBox.width * 0.3)
-                        {
-                            trackedSecondCardBox = playedCardBoxes[0];
-                        }
-                    }
-                    else
-                    {
-                        double minDistance = std::numeric_limits<double>::max();
-                        cv::Rect closest;
-
-                        cv::Point target(
-                            trackedSecondCardBox.x + trackedSecondCardBox.width / 2,
-                            trackedSecondCardBox.y + trackedSecondCardBox.height / 2
-                        );
-
-                        for (const auto& box : playedCardBoxes)
-                        {
-                            cv::Point center(
-                                box.x + box.width / 2,
-                                box.y + box.height / 2
-                            );
-
-                            double d = cv::norm(center - target);
-
-                            if (d < minDistance)
-                            {
-                                minDistance = d;
-                                closest = box;
-                            }
-                        }
-
-                        if (currentBox != closest)
-                            continue;
-
-                        trackedSecondCardBox = closest;
-                    }
+                    if (!followSecondCard(currentBox, playedCardBoxes, cardTracking))
+                        continue;
                 }
 
 
@@ -404,7 +267,7 @@ int main(int argc, char** argv) {
                 }
 
                 // Store the complete candidate set for this observation.
-                // ErrorResolver may need the second or third candidate later.
+                // ErrorResolver may need the following candidates
                 if (detection.classId == BRISCOLA_CLASS_ID) {
                     allBriscolaDetections.push_back({validCandidates});
                     frameBriscolaCandidates.insert(
@@ -420,84 +283,17 @@ int main(int argc, char** argv) {
                     continue;
                 }
 
-                // Detect transition from first played card to second played card
-                if (!secondCardDetected)
-                {
-                    if (firstCardBox.empty())
-                    {
-                        // Lock the first played card and the side of its player.
-                        firstCardBox = currentBox;
-                        firstCardFrame = frameIndex;
-                        firstCardSide = isNorthZone ? 0 : 1;
-                    }
-                }
-
-                if (!secondCardDetected)
-                {
-                    // Until two boxes are present in the same frame, every
-                    // recognized card still belongs to the first player.
-
-                    if (firstCardSide == 0)
-                    {
-                        northDetections.push_back({validCandidates});
-
-                        frameNorthCandidates.insert(
-                            frameNorthCandidates.end(),
-                            validCandidates.begin(),
-                            validCandidates.end()
-                        );
-
-                        if (firstNorthFrame == -1) {
-                            firstNorthFrame = frameIndex;
-                        }
-                    }
-                    else
-                    {
-                        southDetections.push_back({validCandidates});
-
-                        frameSouthCandidates.insert(
-                            frameSouthCandidates.end(),
-                            validCandidates.begin(),
-                            validCandidates.end()
-                        );
-
-                        if (firstSouthFrame == -1) {
-                            firstSouthFrame = frameIndex;
-                        }
-                    }
-                }
-                else
-                {
-                    // Assign new detections to the second player
-                    if (firstCardSide == 0)
-                    {
-                        southDetections.push_back({validCandidates});
-
-                        frameSouthCandidates.insert(
-                            frameSouthCandidates.end(),
-                            validCandidates.begin(),
-                            validCandidates.end()
-                        );
-
-                        if (firstSouthFrame == -1) {
-                            firstSouthFrame = frameIndex;
-                        }
-                    }
-                    else
-                    {
-                        northDetections.push_back({validCandidates});
-
-                        frameNorthCandidates.insert(
-                            frameNorthCandidates.end(),
-                            validCandidates.begin(),
-                            validCandidates.end()
-                        );
-
-                        if (firstNorthFrame == -1) {
-                            firstNorthFrame = frameIndex;
-                        }
-                    }
-                }
+                storePlayedCardObservation(
+                    validCandidates,
+                    currentBox,
+                    isNorthZone,
+                    frameIndex,
+                    cardTracking,
+                    northDetections,
+                    southDetections,
+                    frameNorthCandidates,
+                    frameSouthCandidates
+                );
             }
 
             if (PRINT_FRAME_DETECTIONS) {
@@ -523,33 +319,33 @@ int main(int argc, char** argv) {
 
         std::cout << "\nRound " << roundNumber << std::endl;
         std::cout << "First card locked:" << std::endl;
-        if (firstCardSide == -1) {
+        if (cardTracking.firstCardSide == -1) {
             std::cout << "- player: UNKNOWN" << std::endl;
             std::cout << "- frame: -" << std::endl;
             std::cout << "- bbox: -" << std::endl;
         } else {
             std::cout << "- player: "
-                      << (firstCardSide == 0 ? "NORTH" : "SOUTH")
+                      << (cardTracking.firstCardSide == 0 ? "NORTH" : "SOUTH")
                       << std::endl;
-            std::cout << "- frame: " << firstCardFrame << std::endl;
+            std::cout << "- frame: " << cardTracking.firstCardFrame << std::endl;
             std::cout << "- bbox: "
-                      << firstCardBox.x << ","
-                      << firstCardBox.y << ","
-                      << firstCardBox.width << ","
-                      << firstCardBox.height << std::endl;
+                      << cardTracking.firstCardBox.x << ","
+                      << cardTracking.firstCardBox.y << ","
+                      << cardTracking.firstCardBox.width << ","
+                      << cardTracking.firstCardBox.height << std::endl;
         }
 
         std::cout << "Second card detected:" << std::endl;
-        if (!secondCardDetected) {
+        if (!cardTracking.secondCardDetected) {
             std::cout << "- frame: -" << std::endl;
             std::cout << "- bbox: -" << std::endl;
         } else {
-            std::cout << "- frame: " << secondCardFrame << std::endl;
+            std::cout << "- frame: " << cardTracking.secondCardFrame << std::endl;
             std::cout << "- bbox: "
-                      << secondCardBox.x << ","
-                      << secondCardBox.y << ","
-                      << secondCardBox.width << ","
-                      << secondCardBox.height << std::endl;
+                      << cardTracking.secondCardBox.x << ","
+                      << cardTracking.secondCardBox.y << ","
+                      << cardTracking.secondCardBox.width << ","
+                      << cardTracking.secondCardBox.height << std::endl;
         }
 
         std::cout << "Final candidates:" << std::endl;
@@ -557,10 +353,10 @@ int main(int argc, char** argv) {
         printCardCandidates("South", currentRoundPred.southDetected);
 
         PlayerDetected leaderPred;
-        if(firstNorthFrame != -1 && (firstSouthFrame == -1 || firstNorthFrame < firstSouthFrame)) {
+        if(cardTracking.firstNorthFrame != -1 && (cardTracking.firstSouthFrame == -1 || cardTracking.firstNorthFrame < cardTracking.firstSouthFrame)) {
             leaderPred.player = Player::NORTH;
             leaderPred.confidence = 0.9; 
-        } else if(firstSouthFrame != -1 && (firstNorthFrame == -1 || firstSouthFrame < firstNorthFrame)) {
+        } else if(cardTracking.firstSouthFrame != -1 && (cardTracking.firstNorthFrame == -1 || cardTracking.firstSouthFrame < cardTracking.firstNorthFrame)) {
             leaderPred.player = Player::SOUTH;
             leaderPred.confidence = 0.9; 
         } else {

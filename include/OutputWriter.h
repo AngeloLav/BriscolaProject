@@ -1,3 +1,5 @@
+// Luca Ferraro
+
 #include <string>
 
 struct Game;

@@ -1,4 +1,4 @@
-#pragma once
+// Luca Ferraro
 
 #include <vector>
 #include "gameModels.h"

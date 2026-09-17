@@ -1,3 +1,5 @@
+// Luca Ferraro
+
 #include "GameEngine.h"
 #include "BriscolaRules.h"
 
