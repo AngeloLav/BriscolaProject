@@ -1,4 +1,8 @@
-#pragma once
+// Luca Ferraro
+
+#ifndef GAME_MODELS_H
+#define GAME_MODELS_H
+
 #include <vector>
 #include <string>
 #include <opencv2/opencv.hpp>
@@ -87,3 +91,5 @@ struct Game {
 
     Player winner;
 };
+
+#endif
