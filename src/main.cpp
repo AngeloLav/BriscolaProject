@@ -42,8 +42,6 @@ constexpr int FRAME_SCANNED_NUMBER = 50; // Number of sampled frames per round.
 constexpr int BRISCOLA_SCAN_DIVISOR = 3; // Approximate number of briscola scans.
 constexpr int PROCESSED_FRAME_NUMERATOR = 3; 
 constexpr int PROCESSED_FRAME_DENOMINATOR = 4; // Process the first 3/4 of each video.
-constexpr int MIN_FRAME_COUNT = 1; // Keep frame steps and ranges positive.
-constexpr int FIRST_ROUND_NUMBER = 1; // First fallback round number.
 constexpr double SECOND_CARD_DISTANCE_THRESHOLD = 100.0; // Minimum movement in pixels for the switch.
 
 // Maximum number of candidates to print for each frame in the console output.
@@ -130,7 +128,7 @@ int main(int argc, char** argv) {
     
     std::vector<CardObservation> allBriscolaDetections;
 
-    int fallbackRoundNumber = FIRST_ROUND_NUMBER;
+    int fallbackRoundNumber = 1;
 
     for (const auto& videoPath : input.videoFiles) {
         // Extract the round number from the video name.
@@ -180,10 +178,10 @@ int main(int argc, char** argv) {
         int totalFrames = static_cast<int>(video.get(cv::CAP_PROP_FRAME_COUNT));
         // Process only the first three-quarters of the video beacuse in the last part there is 
         int partOfFrames = std::max(
-            MIN_FRAME_COUNT,
+            1,
             totalFrames * PROCESSED_FRAME_NUMERATOR / PROCESSED_FRAME_DENOMINATOR
         );
-        int frameStep = std::max(MIN_FRAME_COUNT, partOfFrames / FRAME_SCANNED_NUMBER);
+        int frameStep = std::max(1, partOfFrames / FRAME_SCANNED_NUMBER);
         int frameIndex = 0;
         int scannedFrameCount = 0;
 
@@ -205,7 +203,7 @@ int main(int argc, char** argv) {
             std::vector<CardDetected> frameBriscolaCandidates;
 
             bool scanBriscola =
-                scannedFrameCount % std::max(MIN_FRAME_COUNT, FRAME_SCANNED_NUMBER / BRISCOLA_SCAN_DIVISOR) == 0;
+                scannedFrameCount % std::max(1, FRAME_SCANNED_NUMBER / BRISCOLA_SCAN_DIVISOR) == 0;
 
             // Find every valid played-card box in the current frame.
             std::vector<cv::Rect> playedCardBoxes =
