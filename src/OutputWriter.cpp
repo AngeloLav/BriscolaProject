@@ -37,6 +37,16 @@ static std::string playerToString(Player player) {
     return "South";
 }
 
+static void writeCardCsv(std::ofstream& output, const Card& card) {
+
+    if (card.value == 0) {
+        return;
+    }
+
+    output << card.value << ","
+           << cardTypeToString(card.type);
+}
+
 
 void OutputWriter::writeTxt(const Game& game, const std::string& filePath) {
 
@@ -51,17 +61,26 @@ void OutputWriter::writeTxt(const Game& game, const std::string& filePath) {
 
         output << "Round " << round.round << "\n";
 
-        output << "North : "
-               << round.north.value << " , "
-               << cardTypeToString(round.north.type) << "\n";
+        output << "North : ";
+        if (round.north.value != 0) {
+            output << round.north.value << " , "
+                   << cardTypeToString(round.north.type);
+        }
+        output << "\n";
 
-        output << "South : "
-               << round.south.value << " , "
-               << cardTypeToString(round.south.type) << "\n";
+        output << "South : ";
+        if (round.south.value != 0) {
+            output << round.south.value << " , "
+                   << cardTypeToString(round.south.type);
+        }
+        output << "\n";
 
-        output << "Briscola : "
-               << game.briscola.value << " , "
-               << cardTypeToString(game.briscola.type) << "\n";
+        output << "Briscola : ";
+        if (game.briscola.value != 0) {
+            output << game.briscola.value << " , "
+                   << cardTypeToString(game.briscola.type);
+        }
+        output << "\n";
 
         output << "Leader : "
                << playerToString(round.leader) << "\n";
@@ -110,13 +129,13 @@ void OutputWriter::writeCsv(const Game& game, const std::string& filePath) {
 
     for (const auto& round : game.rounds) {
 
-        output << round.round << ","
-               << round.north.value << ","
-               << cardTypeToString(round.north.type) << ","
-               << round.south.value << ","
-               << cardTypeToString(round.south.type) << ","
-               << game.briscola.value << ","
-               << cardTypeToString(game.briscola.type) << ","
+        output << round.round << ",";
+        writeCardCsv(output, round.north);
+        output << ",";
+        writeCardCsv(output, round.south);
+        output << ",";
+        writeCardCsv(output, game.briscola);
+        output << ","
                << playerToString(round.leader) << ","
                << playerToString(round.winner) << ","
                << round.points << "\n";
