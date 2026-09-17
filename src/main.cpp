@@ -222,8 +222,7 @@ int main(int argc, char** argv) {
             for(const auto& detection : detections) {
                 // Skip Briscola detections unless it's time to scan for it.
                 // I scan for briscola only more or less 3 times because are enough and avoid computation waste
-                if (detection.classId == BRISCOLA_CLASS_ID &&
-                    !scanBriscola) {
+                if (detection.classId == BRISCOLA_CLASS_ID && !scanBriscola) {
                     continue;
                 }
 
@@ -236,17 +235,14 @@ int main(int argc, char** argv) {
 
                 // After the switch, keep following the second card by position.
                 // If i have only one card, skip the bounding box that is at the same position as the first card
-                if (detection.classId == PLAYED_CARD_CLASS_ID &&
-                    cardTracking.secondCardDetected)
+                if (detection.classId == PLAYED_CARD_CLASS_ID && cardTracking.secondCardDetected)
                 {
                     if (!followSecondCard(currentBox, playedCardBoxes, cardTracking))
                         continue;
                 }
 
-
                 // Recognize the card inside the detected box.
-                std::vector<CardDetected> recognizedCards =
-                    recognizer.identifyCard(croppedcard);
+                std::vector<CardDetected> recognizedCards = recognizer.identifyCard(croppedcard);
 
                 if (recognizedCards.empty()) {
                     continue;
@@ -366,7 +362,7 @@ int main(int argc, char** argv) {
             leaderPred.player = Player::SOUTH;
             leaderPred.confidence = 0.9; 
         } else {
-            //if we can't determine the leader, we can set a default or handle it differently
+            //if we can't determine the leader, we set a default
             leaderPred.player = Player::NORTH;
             leaderPred.confidence = 0.5; 
         }
@@ -375,12 +371,8 @@ int main(int argc, char** argv) {
     }
 
 
-
     // Combine all briscola observations collected from the videos.
-    prediction.briscolaDetected =
-    getRankedCardsWithConfidence(
-        allBriscolaDetections
-    );
+    prediction.briscolaDetected = getRankedCardsWithConfidence(allBriscolaDetections);
 
     // Normalize all card confidences to a common scale.
     normalizeCardConfidences(prediction);
@@ -428,16 +420,13 @@ int main(int argc, char** argv) {
         if (afterCards.cardIssues.empty()) {
 
             // Use game consistency to correct the briscola prediction.
-            briscolaCorrections =
-                ErrorResolver::resolveBriscola(game);
+            briscolaCorrections = ErrorResolver::resolveBriscola(game);
 
             // Align predicted leaders with the winners of previous rounds.
-            leaderCorrections =
-                ErrorResolver::resolveLeaderIssues(game);
+            leaderCorrections = ErrorResolver::resolveLeaderIssues(game);
 
             // Recheck the briscola after correcting the leaders.
-            briscolaCorrections +=
-                ErrorResolver::resolveBriscola(game);
+            briscolaCorrections += ErrorResolver::resolveBriscola(game);
         }
 
         // Perform the final briscola consistency pass.
